@@ -23,21 +23,17 @@ module.exports = function(app) {
 
 	/* Turn on system flag */
 	app.post('/system', async function(req, res){
-		if(!req.body.action || !req.body.token)
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
+		if(!req.body.action)
 			return res.send({status: false, msg: 'error occurred!'});
 
-		var token = '';
-
-		try{
-			token = cryptr.decrypt(req.body.token);
-		}catch(err){
-			return res.send({status: false, msg: 'not authorised!'});
-		}
-
 		var action = req.body.action;
-
-		if(token != app.key)
-			return res.send({status: false, msg: 'not authorised!'});
 
 		if(action != 'on' && action != 'off')
 			return res.send({status: false, msg: 'undefined action!'});
@@ -53,6 +49,13 @@ module.exports = function(app) {
 
 	/* Return Owner Token Balance */
 	app.post('/ownerTokenBalance', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
 		contractObj.methods.balanceOf(app.contract.owner_address).call({from: app.contract.owner_address})
 		.then(function(result){
 			var balance = result / Math.pow(10, app.contract.decimals);
@@ -63,6 +66,13 @@ module.exports = function(app) {
 
 	/* Return User Token Balance */
 	app.post('/userTokenBalance', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
 		if(!req.body.userId)
 			return res.send({status: false, msg: 'error occurred!'});
 
@@ -81,6 +91,13 @@ module.exports = function(app) {
 
 	/* Create internal wallet for user */
 	app.post('/wallet', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+		
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
@@ -108,7 +125,7 @@ module.exports = function(app) {
 			/* We need to send some eth from our master wallet to created internal wallet */
 			web3.eth.personal.unlockAccount(app.wallet.address, app.wallet.password, 0, (err, unlocked) => {
 				if(err)
-					return res.send({status: false, msg: 'error occurred!'});
+					return res.send({status: false, msg: 'unlock failed!'});
 
 				web3.eth.sendTransaction({
 					from: app.wallet.address,
@@ -126,6 +143,13 @@ module.exports = function(app) {
 
 	/* Transfer tokens from contract to internal wallet */
 	app.post('/transferTokens', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
@@ -146,19 +170,27 @@ module.exports = function(app) {
 			contractObj.methods.transfer(user.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
+				return res.send({status: true, hash: hash});
 			}).on('confirmation', function(confirmationNumber, receipt){
 			}).on('receipt', function(receipt){
 			}).on('error', function(err){
 				return res.send({status: false, msg: err});
 			}).then(function(done){
-				console.log(done);
-				return res.send({status: true, hash: done.transactionHash});
+				//console.log(done);
+				//return res.send({status: true, hash: done.transactionHash});
 			});
 		});
 	});
 
 	/* Withdraw to external public wallet */
 	app.post('/withdraw', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
@@ -208,17 +240,25 @@ module.exports = function(app) {
 			var serializedTx = tx.serialize();
 
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-			.on('error', function(err){
+			.on('transactionHash', function(hash){
+				return res.send({status: true, hash: hash});
+			}).on('error', function(err){
 				return res.send({status: false, msg: err});
 			}).then(function(done){
-				console.log(done);
-				return res.send({status: true, hash: done.transactionHash});
+				//return res.send({status: true, hash: done.transactionHash});
 			});
 		});
 	});
 
 	/* Transfer tokens from one wallet to another wallet */
 	app.post('/transferTokensInternally', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
@@ -264,11 +304,12 @@ module.exports = function(app) {
 		var serializedTx = tx.serialize();
 
 		web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-		.on('error', function(err){
+		.on('transactionHash', function(hash){
+			return res.send({status: true, hash: hash});
+		}).on('error', function(err){
 			return res.send({status: false, msg: err});
 		}).then(function(done){
-			console.log(done);
-			return res.send({status: true, hash: done.transactionHash});
+			//return res.send({status: true, hash: done.transactionHash});
 		});
 	});
 }

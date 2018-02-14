@@ -26,6 +26,7 @@ app.contract.decimals = config.contract.decimals;
 // Wallet Configuration. ( Wallet is the master eth wallet )
 app.wallet = {};
 app.wallet.address = config.wallet.address;
+app.wallet.password = config.wallet.password;
 
 // ChainID Configuration
 app.chainId = config.chainId;
