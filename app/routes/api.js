@@ -75,7 +75,7 @@ module.exports = function(app) {
 
 		if(!req.body.userId)
 			return res.send({status: false, msg: 'error occurred!'});
-
+		
 		var user = await Wallet.findOne({userId: req.body.userId});
 
 		if(!user)
@@ -135,7 +135,7 @@ module.exports = function(app) {
 				.on('error', function(err){
 					return res.send({status: false, message: err});
 				}).then(function(done){
-					return res.send({status: true, msg: 'wallet created successfully!'});
+					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				});
 			});
 		});

@@ -1,3 +1,33 @@
+--- Configuration ---
+server.js loads settings for the app
+
+* db
+	- url
+		mongodb url
+* web3
+	- provider
+		live/test network running provider ( IPC )
+* contract
+	- abi
+		Adbank smart contract ABI file. You can get it easily after compilation. ( Try to get it in Remix )
+	- owner address
+		Your eth address where you want to deploy smart contract
+	- password
+		Your eth address password ( This is used to unlock your address to send tokens )
+	- address
+		You deploy smart contract on your eth address. Then you get smart contract mined address.
+		This is used to create smart contract object in node.
+	- decimals
+		Your token decimal
+* wallet
+	- address
+		Your master eth wallet address
+		When we create internal wallet, we send 1 ETH to the created internal wallet from master eth wallet.
+		That's because transactions can be made between two created internal wallets.
+		Currently, in my test configration, it is set as the one same as contract owner address.
+	- password
+		Your master eth wallet password
+
 --- Platform Explanation ---
 
 This platform doesn't return / share any internal wallet info, contract info.
@@ -38,7 +68,7 @@ You can check/change the right value in config/dev.js. This is used for security
 		If it is new, new user is created and saved in database. (address, private key)
 		And then, it creates internal wallet automatically and transfers 1 ETH from master ETH wallet to the newly created internal wallet.
 		This transferred ETH will be used for transactions between internal wallets.
-		If successful, it returns only success message without created wallet info.
+		If successful, it returns only success message and wallet ID which is unique.
 
 5.  /transferTokens
 	Parameters:
