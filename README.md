@@ -38,3 +38,10 @@ geth --fast --cache 512 --rpc --rpcaddr="localhost" --rpcapi="db,eth,net,persona
 
 #Other Usage ( Not Used)
 geth --testnet --syncmode "fast" --rpc --rpcaddr="localhost" --rpcapi="db,eth,net,personal,miner,web3" --cache=1024 console
+
+#Other Usage (Ropsten)
+geth --testnet --fast --nodiscover --rpc --rpcaddr="localhost" console 2>> geth.log
+
+#Mining
+miner.setEtherbase(personal.listAccounts[0])
+miner.start()
