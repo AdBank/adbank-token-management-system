@@ -4,7 +4,7 @@ var bodyParser = require('body-parser');
 var express = require('express');
 
 // Configs
-var config = require("./config/dev.js");
+var config = require("./config/"+(process.env.NODE_ENV || 'dev')+".js");
 
 // Connect to the DB
 mongoose.connect(config.db.url);
