@@ -127,8 +127,8 @@ module.exports = function(app) {
 				if(err)
 					return res.send({status: false, msg: 'unlock failed!'});
 
-				return res.send({status:true, wallet: account});
-				
+				return res.send({status:true, wallet: account, env: app.wallet.address});
+
 				web3.eth.sendTransaction({
 					from: app.wallet.address,
 					to: account.address,
