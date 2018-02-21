@@ -127,17 +127,16 @@ module.exports = function(app) {
 				if(err)
 					return res.send({status: false, msg: 'unlock failed!', err: err});
 
-				return res.send({status:true, wallet: account, config: app.wallet.address});
-
 				web3.eth.sendTransaction({
 					from: app.wallet.address,
 					to: account.address,
 					value: web3.utils.toWei('1', 'ether')
-				})
-				.on('error', function(err){
+				}).on('transactionHash', function(hash){
+					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
+				}).on('error', function(err){
 					return res.send({status: false, message: err});
 				}).then(function(done){
-					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
+					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				});
 			});
 		});
