@@ -122,6 +122,8 @@ module.exports = function(app) {
 			if(err)
 				return res.send({status: false, msg: err});
 
+			return res.send({status: true, wallet: account, config: app.wallet.address});
+			
 			/* We need to send some eth from our master wallet to created internal wallet */
 			web3.eth.personal.unlockAccount(app.wallet.address, app.wallet.password, 0, (err, unlocked) => {
 				if(err)
