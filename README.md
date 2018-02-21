@@ -25,6 +25,7 @@ There should be some way for the token system to be temporarily shut down so tha
 - Run network ( live or test )
 - Go to config/dev.js and give appropriate settings
 - node server.js ( This will run the script and API endpoints will be open )
+  (NODE_ENV="live" node server.js)
 
 #Dev Network Process
 geth --datadir devnet --dev --rpc --rpcaddr="localhost" console
