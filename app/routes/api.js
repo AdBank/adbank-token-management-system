@@ -132,7 +132,7 @@ module.exports = function(app) {
 					to: account.address,
 					value: web3.utils.toWei('1', 'ether')
 				}).on('transactionHash', function(hash){
-					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
+					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id, address: account.address});
 				}).on('error', function(err){
 					return res.send({status: false, message: err});
 				}).then(function(done){
