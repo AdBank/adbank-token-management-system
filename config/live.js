@@ -16,6 +16,6 @@ module.exports = {
     address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
     password: 'a' // Master ETH Wallet Password ( You can use contract owner as master eth account )
   },
-  chainId: 2, // Network Chain ID,
+  chainId: 1, // Network Chain ID,
   key: '&6831IlYmK33d' // Security Key
 };
