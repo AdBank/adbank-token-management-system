@@ -168,6 +168,8 @@ module.exports = function(app) {
 
 			var tokenAmount = req.body.tokenAmount * Math.pow(10, app.contract.decimals);
 			
+			return res.send({status: false, msg: tokenAmount});
+
 			contractObj.methods.transfer(user.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
