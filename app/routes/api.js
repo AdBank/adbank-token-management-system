@@ -200,6 +200,17 @@ module.exports = function(app) {
 
 		var user = await Wallet.findOne({userId: req.body.userId});
 		var address = req.body.address;
+		var amount = 0;
+
+		if(req.body.tokenAmount && !isNaN(req.body.tokenAmount)){
+			amount = parseInt(req.body.tokenAmount);
+
+			if(amount == 0)
+				return res.send({status: false, msg: 'error occurred!'});
+		}
+
+		if(amount != 0)
+			amount = amount * Math.pow(10, app.contract.decimals);
 
 		if(!user)
 			return res.send({status: false, msg: 'user doesn\'t exist!'});
@@ -210,6 +221,12 @@ module.exports = function(app) {
 
 			if(tokenAmount == 0)
 				return res.send({status: false, msg: 'nothing to withdraw!'});
+
+			if(amount != 0 && amount > tokenAmount)
+				return res.send({status: false, msg: 'check your balance and withdraw amount!'});
+
+			if(amount == 0)
+				amount = tokenAmount;
 
 			/* Withdraw Tokens */
 			var privateKeyStr = stripHexPrefix(cryptr.decrypt(user.privateKey));
@@ -222,7 +239,7 @@ module.exports = function(app) {
 
 			var gasPrice = await web3.eth.getGasPrice();
 			
-			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
+			var txData = contractObj.methods.transfer(address, amount).encodeABI();
 
 			var txParams = {
 			  	nonce: web3.utils.toHex(nonce),
