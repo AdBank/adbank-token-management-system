@@ -3,7 +3,7 @@ Schema = mongoose.Schema;
 
 // Wallet Schema
 var WalletSchema = new Schema ({
-	userId : { type: Number },
+	userId : { type: String },
 	address: { type: String },
 	privateKey: { type: String}
 }, {timestamps: true});

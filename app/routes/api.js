@@ -4,6 +4,7 @@ module.exports = function(app) {
 		Web3    = require('web3'),
 		Cryptr = require('cryptr'),
 		Wallet = require('../models/wallet'),
+		History = require('../models/history'),
 		BigNumber = require("bignumber.js"),
 		net = require('net'),
 		Tx = require('ethereumjs-tx'),
@@ -130,7 +131,7 @@ module.exports = function(app) {
 				web3.eth.sendTransaction({
 					from: app.wallet.address,
 					to: account.address,
-					value: web3.utils.toWei('0.1', 'ether')
+					value: web3.utils.toWei('0.01', 'ether')
 				}).on('transactionHash', function(hash){
 					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				}).on('error', function(err){
@@ -164,14 +165,25 @@ module.exports = function(app) {
 		
 		web3.eth.personal.unlockAccount(app.contract.owner_address, app.contract.password, 0, (err, unlocked) => {
 			if(err)
-				return res.send({status: false, msg: 'unlock failed!'});
+				return res.send({status: false, msg: 'unlock failed!', err: err});
 
 			var tokenAmount = req.body.tokenAmount * Math.pow(10, app.contract.decimals);
 			
 			contractObj.methods.transfer(user.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
-				return res.send({status: true, hash: hash});
+				History.create({
+					from: app.contract.owner_address,
+					to: user._id,
+					amount: tokenAmount,
+					hash: hash,
+					action: 'import'
+				}, async function(err, history){
+					if(err)
+						return res.send({status: false, msg: err});
+
+					return res.send({status: true, hash: hash});
+				});
 			}).on('confirmation', function(confirmationNumber, receipt){
 			}).on('receipt', function(receipt){
 			}).on('error', function(err){
@@ -199,9 +211,9 @@ module.exports = function(app) {
 		var user = await Wallet.findOne({userId: req.body.userId});
 		var address = req.body.address;
 		var amount = 0;
-
+		
 		if(req.body.tokenAmount && !isNaN(req.body.tokenAmount)){
-			amount = parseInt(req.body.tokenAmount);
+			amount = parseFloat(req.body.tokenAmount);
 
 			if(amount == 0)
 				return res.send({status: false, msg: 'error occurred!'});
@@ -257,7 +269,18 @@ module.exports = function(app) {
 
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
-				return res.send({status: true, hash: hash});
+				History.create({
+					from: user._id,
+					to: address,
+					amount: amount,
+					hash: hash,
+					action: 'export'
+				}, async function(err, history){
+					if(err)
+						return res.send({status: false, msg: err});
+					
+					return res.send({status: true, hash: hash});
+				});
 			}).on('error', function(err){
 				return res.send({status: false, msg: err});
 			}).then(function(done){
@@ -266,7 +289,7 @@ module.exports = function(app) {
 		});
 	});
 
-	/* Transfer tokens from one wallet to another wallet */
+	/* Transfer tokens from one wallet to another wallet ( param: userId ) */
 	app.post('/transferTokensInternally', async function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
@@ -321,11 +344,43 @@ module.exports = function(app) {
 
 		web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 		.on('transactionHash', function(hash){
-			return res.send({status: true, hash: hash});
+			History.create({
+				from: fromUser._id,
+				to: toUser._id,
+				amount: tokenAmount,
+				hash: hash,
+				action: 'spent'
+			}, async function(err, history){
+				if(err)
+					return res.send({status: false, msg: err});
+				
+				return res.send({status: true, hash: hash});
+			});
 		}).on('error', function(err){
 			return res.send({status: false, msg: err});
 		}).then(function(done){
 			//return res.send({status: true, hash: done.transactionHash});
 		});
+	});
+
+	/* Get history of wallet by wallet ID */
+	app.post('/history', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
+		if(!flag)
+			return res.send({status: false, msg: 'system is turned off!'});
+
+		if(!req.body.walletID)
+			return res.send({status: false, msg: 'walletID is missing!'});
+
+		var walletID = req.body.walletID;
+		var history = await History.find({$or: [{from: walletID}, {to: walletID}]});
+
+		return res.send({status: true, history: history});
 	});
 }

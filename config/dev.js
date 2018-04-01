@@ -3,18 +3,18 @@ module.exports = {
     url : 'mongodb://localhost:27017/adbank'
   },
   web3: {
-    provider: '/Projects/adbank-token-network/devnet/geth.ipc' // Network IPC Provider
+    provider: '/Projects/adbank-token-network-production/devnet/geth.ipc' // Network IPC Provider
   },
   contract: {
     abi: "abi.json", // Contract ABI
-    owner_address: '0x54292a3cf1acd751e0ef528bdc34953234e5bc89', // Contract Owner Address
-    address: '0x002d29074b0c9716ace7251e551cbe15c5d7cb6b', // Address where contract is deployed
-    password: 'a', // Contract owner address password
+    owner_address: '0x8a21fabb3f79b3803df08ac180205f5a22ad4dd3', // Contract Owner Address
+    address: '0x3174ab9928a85e1f3635be19f1f59ad63fba03e2', // Address where contract is deployed
+    password: '', // Contract owner address password
     decimals: 18 // Token decimals
   },
   wallet: {
-    address: '0x54292a3cf1acd751e0ef528bdc34953234e5bc89', // Typically used to send eth to internal wallet
-    password: 'a' // Master ETH Wallet Password ( You can use contract owner as master eth account )
+    address: '0x8a21fabb3f79b3803df08ac180205f5a22ad4dd3', // Typically used to send eth to internal wallet
+    password: '' // Master ETH Wallet Password ( You can use contract owner as master eth account )
   },
   chainId: 1337, // Network Chain ID,
   key: '&6831IlYmK33d' // Security Key
