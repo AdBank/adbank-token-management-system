@@ -12,10 +12,15 @@ module.exports = {
     password: 'a', // Contract owner address password
     decimals: 18 // Token decimals
   },
-  wallet: {
+  networkWallet: { // Gas Holder
     address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
-    password: 'a' // Master ETH Wallet Password ( You can use contract owner as master eth account )
+    password: 'a' // Network Wallet Password ( You can use contract owner as master eth account )
+  },
+  revenueWallet: {
+    address: '0xf3399d84571fac96eed37cd4b50baee807b67360',
+    password: 'a'
   },
   chainId: 3, // Network Chain ID,
-  key: '&6831IlYmK33d' // Security Key
+  key: '&6831IlYmK33d', // Security Key
+  percent: 25 // Fee Percentage
 };
