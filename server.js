@@ -23,13 +23,20 @@ app.contract.owner_address = config.contract.owner_address;
 app.contract.password = config.contract.password;
 app.contract.decimals = config.contract.decimals;
 
-// Wallet Configuration. ( Wallet is the master eth wallet )
-app.wallet = {};
-app.wallet.address = config.wallet.address;
-app.wallet.password = config.wallet.password;
+// Wallet Configuration.
+app.networkWallet = {};
+app.networkWallet.address = config.networkWallet.address;
+app.networkWallet.password = config.networkWallet.password;
+
+app.revenueWallet = {};
+app.revenueWallet.address = config.revenueWallet.address;
+app.revenueWallet.password = config.revenueWallet.password;
 
 // ChainID Configuration
 app.chainId = config.chainId;
+
+// Fee Percentage
+app.percent = config.percent;
 
 // App Key
 app.key = config.key;

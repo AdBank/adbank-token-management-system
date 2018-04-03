@@ -8,7 +8,8 @@ module.exports = function(app) {
 		BigNumber = require("bignumber.js"),
 		net = require('net'),
 		Tx = require('ethereumjs-tx'),
-		stripHexPrefix = require('strip-hex-prefix');
+		stripHexPrefix = require('strip-hex-prefix'),
+		ethereum_address = require('ethereum-address');
 
 	var flag = true; // System flag
 
@@ -58,6 +59,31 @@ module.exports = function(app) {
 			return res.send({status: false, msg: 'you are not authorised!'});
 
 		contractObj.methods.balanceOf(app.contract.owner_address).call({from: app.contract.owner_address})
+		.then(function(result){
+			var balance = result / Math.pow(10, app.contract.decimals);
+
+			return res.send({status: true, balance: balance});
+		});
+	});
+
+	/* Return Any Holder Token Balance */
+	app.post('/holderTokenBalance', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'you are not authorised!'});
+
+		if(!req.body.address)
+			return res.send({status: false, msg: 'error occurred!'});
+
+		var address = req.body.address;
+
+		if(!ethereum_address.isAddress(address))
+			return res.send({status: false, msg: 'invalid address!'});
+
+		contractObj.methods.balanceOf(address).call({from: app.contract.owner_address})
 		.then(function(result){
 			var balance = result / Math.pow(10, app.contract.decimals);
 
@@ -123,19 +149,19 @@ module.exports = function(app) {
 			if(err)
 				return res.send({status: false, msg: err});
 
-			/* We need to send some eth from our master wallet to created internal wallet */
-			web3.eth.personal.unlockAccount(app.wallet.address, app.wallet.password, 0, (err, unlocked) => {
+			/* We need to send some eth from our gas wallet to created internal wallet */
+			web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
 				if(err)
 					return res.send({status: false, msg: 'unlock failed!', err: err});
 
 				web3.eth.sendTransaction({
-					from: app.wallet.address,
+					from: app.networkWallet.address,
 					to: account.address,
 					value: web3.utils.toWei('0.01', 'ether')
 				}).on('transactionHash', function(hash){
 					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				}).on('error', function(err){
-					return res.send({status: false, message: err});
+					return res.send({status: false, msg: err});
 				}).then(function(done){
 					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				});
@@ -167,7 +193,7 @@ module.exports = function(app) {
 			if(err)
 				return res.send({status: false, msg: 'unlock failed!', err: err});
 
-			var tokenAmount = req.body.tokenAmount * Math.pow(10, app.contract.decimals);
+			var tokenAmount = new BigNumber(req.body.tokenAmount * Math.pow(10, app.contract.decimals));
 			
 			contractObj.methods.transfer(user.address, tokenAmount).send({
 				from: app.contract.owner_address
@@ -212,6 +238,9 @@ module.exports = function(app) {
 		var address = req.body.address;
 		var amount = 0;
 		
+		if(!ethereum_address.isAddress(address))
+			return res.send({status: false, msg: 'invalid address!'});
+
 		if(req.body.tokenAmount && !isNaN(req.body.tokenAmount)){
 			amount = parseFloat(req.body.tokenAmount);
 
@@ -219,24 +248,23 @@ module.exports = function(app) {
 				return res.send({status: false, msg: 'error occurred!'});
 		}
 
-		if(amount != 0)
-			amount = amount * Math.pow(10, app.contract.decimals);
-
 		if(!user)
 			return res.send({status: false, msg: 'user doesn\'t exist!'});
 
 		contractObj.methods.balanceOf(user.address).call({from: app.contract.owner_address})
 		.then(async function(result){
-			var tokenAmount = new BigNumber(result);
+			var balance = result / Math.pow(10, app.contract.decimals);
 
-			if(tokenAmount == 0)
+			if(balance == 0)
 				return res.send({status: false, msg: 'nothing to withdraw!'});
 
-			if(amount != 0 && amount > tokenAmount)
+			if(amount != 0 && amount > balance)
 				return res.send({status: false, msg: 'check your balance and withdraw amount!'});
 
 			if(amount == 0)
-				amount = tokenAmount;
+				amount = balance;
+
+			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
 
 			/* Withdraw Tokens */
 			var privateKeyStr = stripHexPrefix(cryptr.decrypt(user.privateKey));
@@ -249,7 +277,7 @@ module.exports = function(app) {
 
 			var gasPrice = await web3.eth.getGasPrice();
 			
-			var txData = contractObj.methods.transfer(address, amount).encodeABI();
+			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
 
 			var txParams = {
 			  	nonce: web3.utils.toHex(nonce),
@@ -311,8 +339,8 @@ module.exports = function(app) {
 		var toUser = await Wallet.findOne({userId: req.body.toUserId});
 		if(!toUser)
 			return res.send({status: false, msg: 'to doesn\'t exist!'});
-
-		var tokenAmount = req.body.tokenAmount * Math.pow(10, app.contract.decimals);
+		
+		var tokenAmount = new BigNumber(req.body.tokenAmount * Math.pow(10, app.contract.decimals));
 
 		var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromUser.privateKey));
 		
