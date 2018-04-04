@@ -64,7 +64,7 @@ You can check/change the right value in config/dev.js. This is used for security
 
 *	/userTokenBalance
 	Parameters:
-		userId: string value which is unique
+		walletId: string value which is unique
 
 	Description:
 		This endpoint returns token balance of user
@@ -78,11 +78,11 @@ You can check/change the right value in config/dev.js. This is used for security
 		If it is new, new user is created and saved in database. (address, private key)
 		And then, it creates internal wallet automatically and transfers 0.01 ETH from master ETH wallet to the newly created internal wallet.
 		This transferred ETH will be used for transactions between internal wallets.
-		If successful, it returns only success message and wallet ID which is unique.
+		If successful, it returns only success message and wallet Id which is unique.
 
 *  /transferTokens
 	Parameters:
-		userId: string value which is unique
+		walletId: string value which is unique
 		tokenAmount: float value
 
 	Description:
@@ -90,7 +90,7 @@ You can check/change the right value in config/dev.js. This is used for security
 
 *	/withdraw
 	Parameters:
-		userId: string value which is unique
+		walletId: string value which is unique
 		address: public wallet address
 		tokenAmount: float value ( optional )
 	Description:
@@ -98,8 +98,8 @@ You can check/change the right value in config/dev.js. This is used for security
 
 *	/transferTokensInternally
 	Parameters:
-		fromUserId: string value which is unique
-		toUserId: string value which is unique
+		fromWalletId: string value which is unique
+		toWalletId: string value which is unique
 		tokenAmount: float value
 
 	Description:
@@ -107,7 +107,7 @@ You can check/change the right value in config/dev.js. This is used for security
 
 *	/history
 	Parameters:
-		walletID: wallet ID of the user ( advertiser / publisher ) 
+		walletId: wallet Id of the user ( advertiser / publisher ) 
 	
 	Description:
 		This endpoint is to return the transaction history of the user.
