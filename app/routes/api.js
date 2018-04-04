@@ -91,8 +91,8 @@ module.exports = function(app) {
 		});
 	});
 
-	/* Return User Token Balance */
-	app.post('/userTokenBalance', async function(req, res){
+	/* Return Token Balance By WalletId ( userTokenBalance => walletTokenBalance ) */
+	app.post('/walletTokenBalance', async function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
 			key = req.headers['x-api-key'];
@@ -100,15 +100,19 @@ module.exports = function(app) {
 		if(key != app.key)
 			return res.send({status: false, msg: 'you are not authorised!'});
 
-		if(!req.body.userId)
+		if(!req.body.walletId)
 			return res.send({status: false, msg: 'error occurred!'});
 		
-		var user = await Wallet.findOne({userId: req.body.userId});
+		var walletId = req.body.walletId;
+		if (!walletId.match(/^[0-9a-fA-F]{24}$/))
+			return res.send({status: false, msg: 'invalid wallet id!'});
 
-		if(!user)
-			return res.send({status: false, msg: 'user doesn\'t exist!'});
+		var wallet = await Wallet.findOne({_id: walletId});
 
-		contractObj.methods.balanceOf(user.address).call({from: app.contract.owner_address})
+		if(!wallet)
+			return res.send({status: false, msg: 'wallet doesn\'t exist!'});
+
+		contractObj.methods.balanceOf(wallet.address).call({from: app.contract.owner_address})
 		.then(function(result){
 			var balance = result / Math.pow(10, app.contract.decimals);
 
@@ -134,7 +138,7 @@ module.exports = function(app) {
 		var wallet = await Wallet.findOne({userId: req.body.userId});
 
 		if(wallet)
-			return res.send({status: false, msg: 'already registered!'});
+			return res.send({status: false, msg: 'already registered!', walletId: wallet._id});
 
 		var account = web3.eth.accounts.create(web3.utils.randomHex(32));
 
@@ -181,13 +185,17 @@ module.exports = function(app) {
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
-		if(!req.body.userId || !req.body.tokenAmount || isNaN(req.body.tokenAmount))
+		if(!req.body.walletId || !req.body.tokenAmount || isNaN(req.body.tokenAmount))
 			return res.send({status: false, msg: 'error occurred!'});
-	
-		var user = await Wallet.findOne({userId: req.body.userId});
+		
+		var walletId = req.body.walletId;
+		if (!walletId.match(/^[0-9a-fA-F]{24}$/))
+			return res.send({status: false, msg: 'invalid wallet id!'});
 
-		if(!user)
-			return res.send({status: false, msg: 'user doesn\'t exist!'});
+		var wallet = await Wallet.findOne({_id: walletId});
+
+		if(!wallet)
+			return res.send({status: false, msg: 'wallet doesn\'t exist!'});
 		
 		web3.eth.personal.unlockAccount(app.contract.owner_address, app.contract.password, 0, (err, unlocked) => {
 			if(err)
@@ -195,12 +203,12 @@ module.exports = function(app) {
 
 			var tokenAmount = new BigNumber(req.body.tokenAmount * Math.pow(10, app.contract.decimals));
 			
-			contractObj.methods.transfer(user.address, tokenAmount).send({
+			contractObj.methods.transfer(wallet.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
 				History.create({
 					from: app.contract.owner_address,
-					to: user._id,
+					to: wallet._id,
 					amount: tokenAmount,
 					hash: hash,
 					action: 'import'
@@ -231,10 +239,14 @@ module.exports = function(app) {
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
-		if(!req.body.address || !req.body.userId)
+		if(!req.body.address || !req.body.walletId)
 			return res.send({status: false, msg: 'error occurred!'});
 
-		var user = await Wallet.findOne({userId: req.body.userId});
+		var walletId = req.body.walletId;
+		if (!walletId.match(/^[0-9a-fA-F]{24}$/))
+			return res.send({status: false, msg: 'invalid wallet id!'});
+
+		var wallet = await Wallet.findOne({_id: walletId});
 		var address = req.body.address;
 		var amount = 0;
 		
@@ -248,10 +260,10 @@ module.exports = function(app) {
 				return res.send({status: false, msg: 'error occurred!'});
 		}
 
-		if(!user)
-			return res.send({status: false, msg: 'user doesn\'t exist!'});
+		if(!wallet)
+			return res.send({status: false, msg: 'wallet doesn\'t exist!'});
 
-		contractObj.methods.balanceOf(user.address).call({from: app.contract.owner_address})
+		contractObj.methods.balanceOf(wallet.address).call({from: app.contract.owner_address})
 		.then(async function(result){
 			var balance = result / Math.pow(10, app.contract.decimals);
 
@@ -267,11 +279,11 @@ module.exports = function(app) {
 			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
 
 			/* Withdraw Tokens */
-			var privateKeyStr = stripHexPrefix(cryptr.decrypt(user.privateKey));
+			var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
 		
 			var privateKey = new Buffer(privateKeyStr, 'hex');
 
-			var nonce = await web3.eth.getTransactionCount(user.address).catch((error) => {
+			var nonce = await web3.eth.getTransactionCount(wallet.address).catch((error) => {
 				return res.send({status: false, msg: 'error occurred!'});
 			});
 
@@ -283,7 +295,7 @@ module.exports = function(app) {
 			  	nonce: web3.utils.toHex(nonce),
 			  	gasPrice: web3.utils.toHex(gasPrice),
 			  	gasLimit: web3.utils.toHex(400000),
-			  	from: user.address,
+			  	from: wallet.address,
 			  	to: contractObj._address,
 			  	value: '0x00',
 			  	chainId: app.chainId,
@@ -298,7 +310,7 @@ module.exports = function(app) {
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
 				History.create({
-					from: user._id,
+					from: wallet._id,
 					to: address,
 					amount: amount,
 					hash: hash,
@@ -317,7 +329,7 @@ module.exports = function(app) {
 		});
 	});
 
-	/* Transfer tokens from one wallet to another wallet ( param: userId ) */
+	/* Transfer tokens from one wallet to another wallet */
 	app.post('/transferTokensInternally', async function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
@@ -329,66 +341,94 @@ module.exports = function(app) {
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
-		if(!req.body.fromUserId || !req.body.toUserId || !req.body.tokenAmount)
+		if(!req.body.fromWalletId || !req.body.toWalletId || !req.body.tokenAmount || isNaN(req.body.tokenAmount))
 			return res.send({status: false, msg: 'incorrect parameters!'});
 
-		var fromUser = await Wallet.findOne({userId: req.body.fromUserId});
-		if(!fromUser)
+		/* ID Check */
+		var fromWalletId = req.body.fromWalletId;
+		if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/))
+			return res.send({status: false, msg: 'invalid wallet id!'});
+		/* ID Check End */
+
+		var fromWallet = await Wallet.findOne({_id: fromWalletId});
+		if(!fromWallet)
 			return res.send({status: false, msg: 'from doesn\'t exist!'});
 
-		var toUser = await Wallet.findOne({userId: req.body.toUserId});
-		if(!toUser)
+		/* ID Check */
+		var toWalletId = req.body.toWalletId;
+		if (!toWalletId.match(/^[0-9a-fA-F]{24}$/))
+			return res.send({status: false, msg: 'invalid wallet id!'});
+		/* ID Check End */
+
+		var toWallet = await Wallet.findOne({_id: toWalletId});
+		if(!toWallet)
 			return res.send({status: false, msg: 'to doesn\'t exist!'});
 		
-		var tokenAmount = new BigNumber(req.body.tokenAmount * Math.pow(10, app.contract.decimals));
+		var amount = req.body.tokenAmount;
+		if(amount == 0)
+			return res.send({status: false, msg: 'token amount shouldn\'t be equal to 0!'});
 
-		var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromUser.privateKey));
+		/* Check Balance */
+		contractObj.methods.balanceOf(fromWallet.address).call({from: app.contract.owner_address})
+		.then(async function(result){
+			var balance = result / Math.pow(10, app.contract.decimals);
+
+			if(balance == 0)
+				return res.send({status: false, msg: 'nothing to transfer!'});
+
+			if(amount > balance)
+				return res.send({status: false, msg: 'insufficient balance!'});
+
+			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
 		
-		var privateKey = new Buffer(privateKeyStr, 'hex');
-
-		var nonce = await web3.eth.getTransactionCount(fromUser.address).catch((error) => {
-			return res.send({status: false, msg: 'error occurred!'});
-		});
-
-		var gasPrice = await web3.eth.getGasPrice();
-		
-		var txData = contractObj.methods.transfer(toUser.address, tokenAmount).encodeABI();
-
-		var txParams = {
-		  	nonce: web3.utils.toHex(nonce),
-		  	gasPrice: web3.utils.toHex(gasPrice),
-		  	gasLimit: web3.utils.toHex(400000),
-		  	from: fromUser.address,
-		  	to: contractObj._address,
-		  	value: '0x00',
-		  	chainId: app.chainId,
-		  	data: txData
-		};
-
-		var tx = new Tx(txParams);
-		tx.sign(privateKey);
-
-		var serializedTx = tx.serialize();
-
-		web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-		.on('transactionHash', function(hash){
-			History.create({
-				from: fromUser._id,
-				to: toUser._id,
-				amount: tokenAmount,
-				hash: hash,
-				action: 'spent'
-			}, async function(err, history){
-				if(err)
-					return res.send({status: false, msg: err});
-				
-				return res.send({status: true, hash: hash});
+			var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
+			var privateKey = new Buffer(privateKeyStr, 'hex');
+			
+			var nonce = await web3.eth.getTransactionCount(fromWallet.address).catch((error) => {
+				return res.send({status: false, msg: 'error occurred!'});
 			});
-		}).on('error', function(err){
-			return res.send({status: false, msg: err});
-		}).then(function(done){
-			//return res.send({status: true, hash: done.transactionHash});
+			
+			var gasPrice = await web3.eth.getGasPrice();
+			
+			var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
+			
+			var txParams = {
+			  	nonce: web3.utils.toHex(nonce),
+			  	gasPrice: web3.utils.toHex(gasPrice),
+			  	gasLimit: web3.utils.toHex(400000),
+			  	from: fromWallet.address,
+			  	to: contractObj._address,
+			  	value: '0x00',
+			  	chainId: app.chainId,
+			  	data: txData
+			};
+
+			var tx = new Tx(txParams);
+			tx.sign(privateKey);
+			
+			var serializedTx = tx.serialize();
+			
+			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
+			.on('transactionHash', function(hash){
+				History.create({
+					from: fromWallet._id,
+					to: toWallet._id,
+					amount: tokenAmount,
+					hash: hash,
+					action: 'spent'
+				}, async function(err, history){
+					if(err)
+						return res.send({status: false, msg: err});
+					
+					return res.send({status: true, hash: hash});
+				});
+			}).on('error', function(err){
+				return res.send({status: false, msg: err});
+			}).then(function(done){
+				//return res.send({status: true, hash: done.transactionHash});
+			});
 		});
+		/* Check Balance End */
 	});
 
 	/* Get history of wallet by wallet ID */
@@ -403,11 +443,11 @@ module.exports = function(app) {
 		if(!flag)
 			return res.send({status: false, msg: 'system is turned off!'});
 
-		if(!req.body.walletID)
-			return res.send({status: false, msg: 'walletID is missing!'});
+		if(!req.body.walletId)
+			return res.send({status: false, msg: 'error occurred!'});
 
-		var walletID = req.body.walletID;
-		var history = await History.find({$or: [{from: walletID}, {to: walletID}]});
+		var walletId = req.body.walletId;
+		var history = await History.find({$or: [{from: walletId}, {to: walletId}]});
 
 		return res.send({status: true, history: history});
 	});

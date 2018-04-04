@@ -19,14 +19,20 @@ server.js loads settings for the app
 		This is used to create smart contract object in node.
 	- decimals
 		Your token decimal
-* wallet
+* networkWallet ( Gas holder )
 	- address
-		Your master eth wallet address
-		When we create internal wallet, we send 1 ETH to the created internal wallet from master eth wallet.
+		Your network wallet address
+		When we create internal wallet, we send 0.01 ETH to the created internal wallet from network wallet.
 		That's because transactions can be made between two created internal wallets.
 		Currently, in my test configration, it is set as the one same as contract owner address.
 	- password
-		Your master eth wallet password
+		Your network wallet password
+* revenueWallet ( Fee holder )
+	- address
+		Your revenue wallet address
+		When transaction is happening from advertiser to publisher, fee is sent to the fee holder.
+	- password
+		Your revenue wallet password
 
 --- Platform Explanation ---
 
@@ -37,7 +43,7 @@ Below is the brief explanation for API endpoints.
 All API endpoints are working based on x-api-key(header).
 You can check/change the right value in config/dev.js. This is used for security and nobody can't use any API without this key.
 
-1.	/system
+*	/system
 	Parameters: 
 		action: on/off
 
@@ -45,56 +51,66 @@ You can check/change the right value in config/dev.js. This is used for security
 		This endpoint is to turn on/off the system.
 		If the system is turned off, any APIs won't work.
 
-2.	/ownerTokenBalance
+*	/ownerTokenBalance
 	Parameters:
 		None
 
 	Description:
 		This endpoint returns contract owner's token balance
 
-3.	/userTokenBalance
+*	/holderTokenBalance
 	Parameters:
-		userId: integer value which is unique
+		address: eth address of any token holder
+
+*	/userTokenBalance
+	Parameters:
+		userId: string value which is unique
 
 	Description:
 		This endpoint returns token balance of user
 
-4.	/wallet
+*	/wallet
 	Parameters:
-		userId: integer value which is unique
+		userId: string value which is unique
 
 	Description:
 		This endpoint accepts userId.
 		If it is new, new user is created and saved in database. (address, private key)
-		And then, it creates internal wallet automatically and transfers 1 ETH from master ETH wallet to the newly created internal wallet.
+		And then, it creates internal wallet automatically and transfers 0.01 ETH from master ETH wallet to the newly created internal wallet.
 		This transferred ETH will be used for transactions between internal wallets.
 		If successful, it returns only success message and wallet ID which is unique.
 
-5.  /transferTokens
+*  /transferTokens
 	Parameters:
-		userId: integer value which is unique
+		userId: string value which is unique
 		tokenAmount: float value
 
 	Description:
 		This endpoint is to transfer tokens from contract owner to the user.
 
-6.	/withdraw
+*	/withdraw
 	Parameters:
-		userId: integer value which is unique
+		userId: string value which is unique
 		address: public wallet address
-
+		tokenAmount: float value ( optional )
 	Description:
 		This endpoint will withdraw all tokens from the user's internal wallet to the specified public address.
 
-7.	/transferTokensInternally
+*	/transferTokensInternally
 	Parameters:
-		fromUserId: integer value which is unique
-		toUserId: integer value which is unique
+		fromUserId: string value which is unique
+		toUserId: string value which is unique
 		tokenAmount: float value
 
 	Description:
 		This endpoint is to transfer tokens from <fromUser>'s internal wallet to <toUser>'s internal wallet.
 
+*	/history
+	Parameters:
+		walletID: wallet ID of the user ( advertiser / publisher ) 
+	
+	Description:
+		This endpoint is to return the transaction history of the user.
 
 --- Suggestion ---
 
