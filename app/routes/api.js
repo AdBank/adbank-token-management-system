@@ -151,7 +151,7 @@ module.exports = function(app) {
 			privateKey: cryptr.encrypt(account.privateKey)
 		}, async function(err, wallet){
 			if(err)
-				return res.send({status: false, msg: err});
+				return res.send({status: false, msg: 'error occurred in creating wallet!'});
 
 			/* We need to send some eth from our gas wallet to created internal wallet */
 			web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
@@ -165,7 +165,7 @@ module.exports = function(app) {
 				}).on('transactionHash', function(hash){
 					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				}).on('error', function(err){
-					return res.send({status: false, msg: err});
+					return res.send({status: false, msg: 'error occurred in sending transaction!'});
 				}).then(function(done){
 					var status = done.status == '0x1'?true:false;
 					
@@ -214,7 +214,7 @@ module.exports = function(app) {
 			}).on('confirmation', function(confirmationNumber, receipt){
 			}).on('receipt', function(receipt){
 			}).on('error', function(err){
-				return res.send({status: false, msg: err});
+				return res.send({status: false, msg: 'error occurred in sending transaction!'});
 			}).then(function(done){
 				var status = done.status == '0x1'?true:false;
 				var hash = done.transactionHash;
@@ -232,7 +232,7 @@ module.exports = function(app) {
 					action: 'import'
 				}, async function(err, history){
 					if(err)
-						return res.send({status: false, msg: err});
+						return res.send({status: false, msg: 'error occurred in saving history!'});
 
 					return res.send({status: true, hash: hash});
 				});
@@ -323,7 +323,7 @@ module.exports = function(app) {
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
 			}).on('error', function(err){
-				return res.send({status: false, msg: err});
+				return res.send({status: false, msg: 'error occurred in sending transaction!'});
 			}).then(function(done){
 				var status = done.status == '0x1'?true:false;
 				var hash = done.transactionHash;
@@ -335,13 +335,13 @@ module.exports = function(app) {
 				History.create({
 					from: wallet._id,
 					to: address,
-					amount: amount,
+					amount: tokenAmount,
 					hash: hash,
 					gas: gas,
 					action: 'export'
 				}, async function(err, history){
 					if(err)
-						return res.send({status: false, msg: err});
+						return res.send({status: false, msg: 'error occurred in saving history!'});
 					
 					return res.send({status: true, hash: hash});
 				});
@@ -431,7 +431,7 @@ module.exports = function(app) {
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
 			}).on('error', function(err){
-				return res.send({status: false, msg: err});
+				return res.send({status: false, msg: 'error occurred in sending transaction!'});
 			}).then(function(done){
 				var status = done.status == '0x1'?true:false;
 				var hash = done.transactionHash;
@@ -449,7 +449,7 @@ module.exports = function(app) {
 					action: 'spent'
 				}, async function(err, history){
 					if(err)
-						return res.send({status: false, msg: err});
+						return res.send({status: false, msg: 'error occurred in saving history!'});
 					
 					return res.send({status: true, hash: hash});
 				});
