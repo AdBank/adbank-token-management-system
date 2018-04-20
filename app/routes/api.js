@@ -307,22 +307,11 @@ module.exports = function(app) {
 
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
-			}).on('error', function(err){
-				return res.send({status: false, msg: 'error occurred in sending transaction!'});
-			}).then(function(done){
-				var status = done.status == '0x1'?true:false;
-				var hash = done.transactionHash;
-				var gas = done.gasUsed;
-
-				if(!status)
-					return res.send({status: false, msg: 'error occurred!'});
-
 				History.create({
 					from: wallet._id,
 					to: address,
 					amount: tokenAmount,
 					hash: hash,
-					gas: gas,
 					action: 'export'
 				}, async function(err, history){
 					if(err)
@@ -330,6 +319,9 @@ module.exports = function(app) {
 					
 					return res.send({status: true, hash: hash});
 				});
+			}).on('error', function(err){
+				return res.send({status: false, msg: 'error occurred in sending transaction!'});
+			}).then(function(done){
 			});
 		});
 	});
@@ -415,22 +407,11 @@ module.exports = function(app) {
 			
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
-			}).on('error', function(err){
-				return res.send({status: false, msg: 'error occurred in sending transaction!'});
-			}).then(function(done){
-				var status = done.status == '0x1'?true:false;
-				var hash = done.transactionHash;
-				var gas = done.gasUsed;
-
-				if(!status)
-					return res.send({status: false, msg: 'error occurred!'});
-
 				History.create({
 					from: fromWallet._id,
 					to: toWallet._id,
 					amount: tokenAmount,
 					hash: hash,
-					gas: gas,
 					action: 'spent'
 				}, async function(err, history){
 					if(err)
@@ -438,6 +419,9 @@ module.exports = function(app) {
 					
 					return res.send({status: true, hash: hash});
 				});
+			}).on('error', function(err){
+				return res.send({status: false, msg: 'error occurred in sending transaction!'});
+			}).then(function(done){
 			});
 		});
 		/* Check Balance End */
