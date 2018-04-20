@@ -163,11 +163,16 @@ module.exports = function(app) {
 					to: account.address,
 					value: web3.utils.toWei('0.01', 'ether')
 				}).on('transactionHash', function(hash){
-					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
+					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				}).on('error', function(err){
 					return res.send({status: false, msg: err});
 				}).then(function(done){
-					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
+					var status = done.status == '0x1'?true:false;
+					
+					if(!status)
+						return res.send({status: false, msg: 'error occurred!'});
+
+					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				});
 			});
 		});
@@ -206,11 +211,24 @@ module.exports = function(app) {
 			contractObj.methods.transfer(wallet.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
+			}).on('confirmation', function(confirmationNumber, receipt){
+			}).on('receipt', function(receipt){
+			}).on('error', function(err){
+				return res.send({status: false, msg: err});
+			}).then(function(done){
+				var status = done.status == '0x1'?true:false;
+				var hash = done.transactionHash;
+				var gas = done.gasUsed;
+
+				if(!status)
+					return res.send({status: false, msg: 'error occurred!'});
+
 				History.create({
 					from: app.contract.owner_address,
 					to: wallet._id,
 					amount: tokenAmount,
 					hash: hash,
+					gas: gas,
 					action: 'import'
 				}, async function(err, history){
 					if(err)
@@ -218,11 +236,6 @@ module.exports = function(app) {
 
 					return res.send({status: true, hash: hash});
 				});
-			}).on('confirmation', function(confirmationNumber, receipt){
-			}).on('receipt', function(receipt){
-			}).on('error', function(err){
-				return res.send({status: false, msg: err});
-			}).then(function(done){
 			});
 		});
 	});
@@ -309,11 +322,22 @@ module.exports = function(app) {
 
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
+			}).on('error', function(err){
+				return res.send({status: false, msg: err});
+			}).then(function(done){
+				var status = done.status == '0x1'?true:false;
+				var hash = done.transactionHash;
+				var gas = done.gasUsed;
+
+				if(!status)
+					return res.send({status: false, msg: 'error occurred!'});
+
 				History.create({
 					from: wallet._id,
 					to: address,
 					amount: amount,
 					hash: hash,
+					gas: gas,
 					action: 'export'
 				}, async function(err, history){
 					if(err)
@@ -321,10 +345,6 @@ module.exports = function(app) {
 					
 					return res.send({status: true, hash: hash});
 				});
-			}).on('error', function(err){
-				return res.send({status: false, msg: err});
-			}).then(function(done){
-				//return res.send({status: true, hash: done.transactionHash});
 			});
 		});
 	});
@@ -410,11 +430,22 @@ module.exports = function(app) {
 			
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
+			}).on('error', function(err){
+				return res.send({status: false, msg: err});
+			}).then(function(done){
+				var status = done.status == '0x1'?true:false;
+				var hash = done.transactionHash;
+				var gas = done.gasUsed;
+
+				if(!status)
+					return res.send({status: false, msg: 'error occurred!'});
+
 				History.create({
 					from: fromWallet._id,
 					to: toWallet._id,
 					amount: tokenAmount,
 					hash: hash,
+					gas: gas,
 					action: 'spent'
 				}, async function(err, history){
 					if(err)
@@ -422,10 +453,6 @@ module.exports = function(app) {
 					
 					return res.send({status: true, hash: hash});
 				});
-			}).on('error', function(err){
-				return res.send({status: false, msg: err});
-			}).then(function(done){
-				//return res.send({status: true, hash: done.transactionHash});
 			});
 		});
 		/* Check Balance End */

@@ -7,7 +7,8 @@ var HistorySchema = new Schema ({
 	to: { type: String },
 	amount: { type: Number },
 	hash: { type: String },
-	action: { type: String }
+	action: { type: String },
+	gas: { type: Number }
 }, {timestamps: true});
 
 module.exports = mongoose.model('History', HistorySchema);
