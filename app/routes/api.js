@@ -204,24 +204,11 @@ module.exports = function(app) {
 			contractObj.methods.transfer(wallet.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
-			}).on('confirmation', function(confirmationNumber, receipt){
-			}).on('receipt', function(receipt){
-			}).on('error', function(err){
-				return res.send({status: false, msg: 'error occurred in sending transaction!'});
-			}).then(function(done){
-				var status = done.status == '0x1'?true:false;
-				var hash = done.transactionHash;
-				var gas = done.gasUsed;
-
-				if(!status)
-					return res.send({status: false, msg: 'error occurred!'});
-
 				History.create({
 					from: app.contract.owner_address,
 					to: wallet._id,
 					amount: tokenAmount,
 					hash: hash,
-					gas: gas,
 					action: 'import'
 				}, async function(err, history){
 					if(err)
@@ -229,6 +216,11 @@ module.exports = function(app) {
 
 					return res.send({status: true, hash: hash});
 				});
+			}).on('confirmation', function(confirmationNumber, receipt){
+			}).on('receipt', function(receipt){
+			}).on('error', function(err){
+				return res.send({status: false, msg: 'error occurred in sending transaction!'});
+			}).then(function(done){
 			});
 		});
 	});
