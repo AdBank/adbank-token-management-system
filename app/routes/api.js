@@ -164,15 +164,15 @@ module.exports = function(app) {
 					value: web3.utils.toWei('0.01', 'ether')
 				}).on('transactionHash', function(hash){
 					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
-				}).on('error', function(err){
-					return res.send({status: false, msg: 'error occurred in sending transaction!'});
-				}).then(function(done){
+				}).on('receipt',function(done){
 					var status = done.status == '0x1'?true:false;
 					
 					if(!status)
 						return res.send({status: false, msg: 'error occurred!'});
 
 					return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
+				}).on('error', function(err){
+					return res.send({status: false, msg: 'error occurred in sending transaction!'});
 				});
 			});
 		});
