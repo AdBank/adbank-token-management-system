@@ -153,12 +153,12 @@ module.exports = function(app) {
 			if(err)
 				return res.send({status: false, msg: 'error occurred in creating wallet!'});
 
+			var gasPrice = await web3.eth.getGasPrice();
+			
 			/* We need to send some eth from our gas wallet to created internal wallet */
 			web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
 				if(err)
 					return res.send({status: false, msg: 'unlock failed!', err: err});
-
-				var gasPrice = await web3.eth.getGasPrice();
 
 				web3.eth.sendTransaction({
 					from: app.networkWallet.address,
