@@ -158,10 +158,14 @@ module.exports = function(app) {
 				if(err)
 					return res.send({status: false, msg: 'unlock failed!', err: err});
 
+				var gasPrice = await web3.eth.getGasPrice();
+
 				web3.eth.sendTransaction({
 					from: app.networkWallet.address,
 					to: account.address,
-					value: web3.utils.toWei('0.01', 'ether')
+					value: web3.utils.toWei('0.01', 'ether'),
+					gasPrice: web3.utils.toHex(gasPrice),
+			  		gasLimit: web3.utils.toHex(400000)
 				}).on('transactionHash', function(hash){
 					//return res.send({status: true, msg: 'wallet created successfully!', walletId: wallet._id});
 				}).on('receipt',function(done){
