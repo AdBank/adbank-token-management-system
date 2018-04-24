@@ -205,6 +205,8 @@ module.exports = function(app) {
 
 			var tokenAmount = new BigNumber(req.body.tokenAmount * Math.pow(10, app.contract.decimals));
 			
+			var sent = false;
+
 			contractObj.methods.transfer(wallet.address, tokenAmount).send({
 				from: app.contract.owner_address
 			}).on('transactionHash', function(hash){
@@ -215,16 +217,16 @@ module.exports = function(app) {
 					hash: hash,
 					action: 'import'
 				}, async function(err, history){
+					sent = true;
+
 					if(err)
 						return res.send({status: false, msg: 'Error occurred in saving history!'});
 
 					return res.send({status: true, hash: hash});
 				});
-			}).on('confirmation', function(confirmationNumber, receipt){
-			}).on('receipt', function(receipt){
 			}).on('error', function(err){
-				return res.send({status: false, msg: 'Error occurred in sending transaction!'});
-			}).then(function(done){
+				if(!sent)
+					return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 			});
 		});
 	});
@@ -309,6 +311,7 @@ module.exports = function(app) {
 
 			var serializedTx = tx.serialize();
 
+			var sent = false;
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
 				History.create({
@@ -318,14 +321,16 @@ module.exports = function(app) {
 					hash: hash,
 					action: 'export'
 				}, async function(err, history){
+					sent = true;
+
 					if(err)
 						return res.send({status: false, msg: 'Error occurred in saving history!'});
 					
 					return res.send({status: true, hash: hash});
 				});
 			}).on('error', function(err){
-				return res.send({status: false, msg: 'Error occurred in sending transaction!'});
-			}).then(function(done){
+				if(!sent)
+					return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 			});
 		});
 	});
@@ -535,6 +540,7 @@ module.exports = function(app) {
 			
 			var serializedTx = tx.serialize();
 			
+			var sent = false;
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
 				History.create({
@@ -544,14 +550,15 @@ module.exports = function(app) {
 					hash: hash,
 					action: 'spent'
 				}, async function(err, history){
+					sent = true;
 					if(err)
 						return res.send({status: false, msg: 'Error occurred in saving history!'});
 					
 					return res.send({status: true, hash: hash});
 				});
 			}).on('error', function(err){
-				return res.send({status: false, msg: 'Error occurred in sending transaction!'});
-			}).then(function(done){
+				if(!sent)
+					return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 			});
 		});
 		/* Check Balance End */
