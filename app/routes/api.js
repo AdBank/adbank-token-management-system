@@ -298,7 +298,7 @@ module.exports = function(app) {
 			var txParams = {
 			  	nonce: web3.utils.toHex(nonce),
 			  	gasPrice: web3.utils.toHex(gasPrice),
-			  	gasLimit: web3.utils.toHex(400000),
+			  	gasLimit: web3.utils.toHex(450000),
 			  	from: wallet.address,
 			  	to: contractObj._address,
 			  	value: '0x00',
@@ -527,7 +527,7 @@ module.exports = function(app) {
 			var txParams = {
 			  	nonce: web3.utils.toHex(nonce),
 			  	gasPrice: web3.utils.toHex(gasPrice),
-			  	gasLimit: web3.utils.toHex(400000),
+			  	gasLimit: web3.utils.toHex(450000),
 			  	from: fromWallet.address,
 			  	to: contractObj._address,
 			  	value: '0x00',
