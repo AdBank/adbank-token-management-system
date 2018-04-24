@@ -158,14 +158,18 @@ module.exports = function(app) {
 				if(err)
 					return res.send({status: false, msg: 'Unlock failed!', err: err});
 
+				var sent = false;
+
 				web3.eth.sendTransaction({
 					from: app.networkWallet.address,
 					to: account.address,
 					value: web3.utils.toWei('0.01', 'ether')
 				}).on('transactionHash', function(hash){
+					sent = true;
 					return res.send({status: true, msg: 'Wallet created successfully!', walletId: wallet._id});
 				}).on('error', function(err){
-					return res.send({status: false, msg: 'Error occurred in sending transaction!'});
+					if(!sent)
+						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 				});
 			});
 		});
