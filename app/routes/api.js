@@ -207,26 +207,32 @@ module.exports = function(app) {
 			
 			var sent = false;
 
-			contractObj.methods.transfer(wallet.address, tokenAmount).send({
-				from: app.contract.owner_address
-			}).on('transactionHash', function(hash){
-				History.create({
-					from: app.contract.owner_address,
-					to: wallet._id,
-					amount: tokenAmount,
-					hash: hash,
-					action: 'import'
-				}, async function(err, history){
-					sent = true;
+			contractObj.methods.balanceOf(wallet.address).call({from: app.contract.owner_address})
+			.then(async function(result){
+				var balance = result / Math.pow(10, app.contract.decimals);
+				balance += parseFloat(req.body.tokenAmount); // Fresh Balance
 
-					if(err)
-						return res.send({status: false, msg: 'Error occurred in saving history!'});
+				contractObj.methods.transfer(wallet.address, tokenAmount).send({
+					from: app.contract.owner_address
+				}).on('transactionHash', function(hash){
+					History.create({
+						from: app.contract.owner_address,
+						to: wallet._id,
+						amount: tokenAmount,
+						hash: hash,
+						action: 'import'
+					}, async function(err, history){
+						sent = true;
 
-					return res.send({status: true, hash: hash});
+						if(err)
+							return res.send({status: false, msg: 'Error occurred in saving history!'});
+
+						return res.send({status: true, hash: hash, balance: balance});
+					});
+				}).on('error', function(err){
+					if(!sent)
+						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 				});
-			}).on('error', function(err){
-				if(!sent)
-					return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 			});
 		});
 	});
