@@ -401,10 +401,14 @@ module.exports = function(app) {
 				if(!toWallet)
 					continue;
 
-				var tempResult = await contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address});
-				var tempBalance = tempResult / Math.pow(10, app.contract.decimals);
+				if(items[i].balance && items[i].balance != 0){
+					items[i].balance += parseFloat(items[i].amount);
+				}else{
+					var tempResult = await contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address});
+					var tempBalance = tempResult / Math.pow(10, app.contract.decimals);
 
-				items[i].balance = parseFloat(tempBalance) + parseFloat(items[i].amount); //Fresh Balance
+					items[i].balance = parseFloat(tempBalance) + parseFloat(items[i].amount); //Fresh Balance
+				}
 
 				if(items[i].amount > balance)
 					continue;
