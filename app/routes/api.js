@@ -320,6 +320,8 @@ module.exports = function(app) {
 			var sent = false;
 			web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 			.on('transactionHash', function(hash){
+				balance = parseFloat(balance) - parseFloat(amount);
+
 				History.create({
 					from: wallet._id,
 					to: address,
@@ -332,7 +334,7 @@ module.exports = function(app) {
 					if(err)
 						return res.send({status: false, msg: 'Error occurred in saving history!'});
 					
-					return res.send({status: true, hash: hash});
+					return res.send({status: true, hash: hash, balance: balance});
 				});
 			}).on('error', function(err){
 				if(!sent)
