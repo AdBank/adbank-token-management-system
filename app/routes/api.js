@@ -401,6 +401,11 @@ module.exports = function(app) {
 				if(!toWallet)
 					continue;
 
+				var tempResult = await contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address});
+				var tempBalance = tempResult / Math.pow(10, app.contract.decimals);
+
+				items[i].balance = parseFloat(tempBalance) + parseFloat(items[i].amount); //Fresh Balance
+
 				if(items[i].amount > balance)
 					continue;
 
@@ -458,7 +463,7 @@ module.exports = function(app) {
 					}
 
 					if(processed == newItems.length)
-						return res.send({status: true, items: newItems});
+						return res.send({status: true, items: newItems, balance: balance});
 				});
 
 				batch.add(transaction);
