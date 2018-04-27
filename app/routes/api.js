@@ -166,7 +166,7 @@ module.exports = function(app) {
 					value: web3.utils.toWei('0.01', 'ether')
 				}).on('transactionHash', function(hash){
 					sent = true;
-					return res.send({status: true, msg: 'Wallet created successfully!', walletId: wallet._id});
+					return res.send({status: true, msg: 'Wallet created successfully!', walletId: wallet._id, walletAddress: account.address});
 				}).on('error', function(err){
 					if(!sent)
 						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
