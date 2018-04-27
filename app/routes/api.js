@@ -152,9 +152,10 @@ module.exports = function(app) {
 		}, async function(err, wallet){
 			if(err)
 				return res.send({status: false, msg: 'Error occurred in creating wallet!'});
-
+			
+			return res.send({status: true, msg: 'Wallet created successfully!', walletId: wallet._id, walletAddress: account.address});
 			/* We need to send some eth from our gas wallet to created internal wallet */
-			web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
+			/*web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
 				if(err)
 					return res.send({status: false, msg: 'Unlock failed!', err: err});
 
@@ -171,7 +172,7 @@ module.exports = function(app) {
 					if(!sent)
 						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 				});
-			});
+			});*/
 		});
 	});
 
