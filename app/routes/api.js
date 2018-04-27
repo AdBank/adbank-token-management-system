@@ -344,6 +344,51 @@ module.exports = function(app) {
 		});
 	});
 
+	/* Create multiple internal wallets for users */
+	app.post('/batchWallet', async function(req, res){
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
+		
+		if(!flag)
+			return res.send({status: false, msg: 'System is turned off!'});
+
+		if(!req.body.users)
+			return res.send({status: false, msg: 'Users are missing!'});
+
+		var users = JSON.parse(req.body.users);
+		var items = [];
+
+		for(var i in users){
+			
+			var wallet = await Wallet.findOne({userId: users[i].id});
+
+			if(wallet)
+				continue;
+
+			var account = web3.eth.accounts.create(web3.utils.randomHex(32));
+			
+			if(!account)
+				continue;
+		
+			var newWallet = await Wallet.create({
+				userId: users[i].id,
+				address: account.address,
+				privateKey: cryptr.encrypt(account.privateKey)
+			});
+
+			users[i].walletId = newWallet._id;
+			users[i].walletAddress = account.address;
+
+			items.push(users[i]);
+		}
+
+		return res.send({status: true, items: items});
+	});
+
 	/* Badge Request */
 	app.post('/batchRequest', async function(req, res){
 		if(!req.body.fromWalletId)
