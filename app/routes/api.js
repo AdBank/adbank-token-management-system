@@ -344,8 +344,62 @@ module.exports = function(app) {
 		});
 	});
 
+	importedWallets = [];
+
+	function handleWalletByOffset(index, items){
+	    return new Promise((resolve, reject) => {
+	    	Wallet.findOne({userId: items[index].id}, function(err, wallet){
+		    	if(wallet || err)
+		    		resolve(null);
+
+				var account = web3.eth.accounts.create(web3.utils.randomHex(32));
+				
+				if(!account)
+					resolve(null);
+				
+				Wallet.create({
+					userId: items[index].id,
+					address: account.address,
+					privateKey: cryptr.encrypt(account.privateKey)
+				}, function(err, wallet){
+					if(!err && wallet){
+						var temp = items[index];
+						temp.walletId = wallet._id;
+						temp.walletAddress = wallet.address;
+						temp.privateKey = wallet.privateKey;
+
+						resolve(temp);
+					}else{
+						console.log(err);
+					}
+				});
+			});
+	    });
+	}
+
+	function handleNextWalletDB(index, items){
+	    return handleWalletByOffset(index, items).then((result) => {
+	        if(result)
+	        	importedWallets.push(result);
+
+	        index++;
+	        if(index < items.length){
+	        	return handleNextWalletDB(index, items);
+	        	/* Process Data End */
+	        }else{
+	            return Promise.resolve();
+	        }
+	    });
+	}
+
+	function handleWalletDB(items){
+	    return handleNextWalletDB(0, items).then(() => {
+	    	return Promise.resolve();
+	    });
+	}
+
 	/* Create multiple internal wallets for users */
-	app.post('/batchWallet', async function(req, res){
+	app.post('/batchWallet', function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
 			key = req.headers['x-api-key'];
@@ -359,34 +413,25 @@ module.exports = function(app) {
 		if(!req.body.users)
 			return res.send({status: false, msg: 'Users are missing!'});
 
-		var users = JSON.parse(req.body.users);
-		var items = [];
-
-		for(var i in users){
-			
-			var wallet = await Wallet.findOne({userId: users[i].id});
-
-			if(wallet)
-				continue;
-
-			var account = web3.eth.accounts.create(web3.utils.randomHex(32));
-			
-			if(!account)
-				continue;
-		
-			var newWallet = await Wallet.create({
-				userId: users[i].id,
-				address: account.address,
-				privateKey: cryptr.encrypt(account.privateKey)
-			});
-
-			users[i].walletId = newWallet._id;
-			users[i].walletAddress = account.address;
-
-			items.push(users[i]);
+		var users = [];
+		try{
+			users = JSON.parse(req.body.users);
+		}catch(e){
+			return res.send({status: false, msg: 'Users are missing!'});
 		}
 
-		return res.send({status: true, items: items});
+		if(users.length == 0)
+			return res.send({status: false, msg: 'Users are missing!'});
+
+		handleWalletDB(users).then(() => {
+			var newItems = importedWallets;
+			importedWallets = [];
+
+			if(newItems.length == 0)
+				return res.send({status: false, msg: 'Nothing to import!'});
+			
+			return res.send({status: true, items: newItems});
+		});
 	});
 
 	/* Badge Request */
