@@ -289,6 +289,27 @@ module.exports = function(app) {
 
 			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
 
+			/* Supply Gas */
+			var ethAmount = new BigNumber(await web3.eth.getBalance(wallet.address));
+			var gasPrice = await web3.eth.getGasPrice();
+
+			var remainingGas = new BigNumber(ethAmount / gasPrice);
+
+			if(remainingGas < 450000){
+				var giveGas = 450000 - remainingGas;
+				var giveETH = new BigNumber(giveGas * gasPrice);
+
+				var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
+				if(unlock){
+					await web3.eth.sendTransaction({
+						from: app.networkWallet.address,
+						to: wallet.address,
+						value: giveETH
+					});
+				}
+			}
+			/* Supply Gas */
+
 			/* Withdraw Tokens */
 			var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
 		
@@ -298,8 +319,6 @@ module.exports = function(app) {
 				return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 			});
 
-			var gasPrice = await web3.eth.getGasPrice();
-			
 			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
 
 			var txParams = {
@@ -608,6 +627,9 @@ module.exports = function(app) {
 		if(amount == 0)
 			return res.send({status: false, msg: 'Token amount shouldn\'t be equal to 0!'});
 
+		var fee = parseFloat(amount * 0.25); // Fee to Revenue Wallet
+		var totalAmount = parseFloat(amount) + parseFloat(fee);
+
 		/* Check Balance */
 		contractObj.methods.balanceOf(fromWallet.address).call({from: app.contract.owner_address})
 		.then(async function(result){
@@ -616,15 +638,37 @@ module.exports = function(app) {
 			if(balance == 0)
 				return res.send({status: false, msg: 'Nothing to transfer!'});
 
-			if(amount > balance)
+			if(totalAmount > balance)
 				return res.send({status: false, msg: 'Insufficient balance!'});
+
+			/* Supply Gas */
+			var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
+			var gasPrice = await web3.eth.getGasPrice();
+
+			var remainingGas = new BigNumber(ethAmount / gasPrice);
+
+			if(remainingGas < 900000){
+				var giveGas = 900000 - remainingGas;
+				var giveETH = new BigNumber(giveGas * gasPrice);
+
+				var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
+				if(unlock){
+					await web3.eth.sendTransaction({
+						from: app.networkWallet.address,
+						to: fromWallet.address,
+						value: giveETH
+					});
+				}
+			}
+			/* Supply Gas */
 
 			contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address})
 			.then(async function(result){
 				var toBalance = result / Math.pow(10, app.contract.decimals);
 
 				var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
-			
+				var feeAmount = new BigNumber(fee * Math.pow(10, app.contract.decimals));
+
 				var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
 				var privateKey = new Buffer(privateKeyStr, 'hex');
 				
@@ -632,12 +676,30 @@ module.exports = function(app) {
 					return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 				});
 				
-				var gasPrice = await web3.eth.getGasPrice();
+				/* Send Fee */
+				var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, feeAmount).encodeABI();
+				var txParamsFee = {
+				  	nonce: web3.utils.toHex(nonce),
+				  	gasPrice: web3.utils.toHex(gasPrice),
+				  	gasLimit: web3.utils.toHex(450000),
+				  	from: fromWallet.address,
+				  	to: contractObj._address,
+				  	value: '0x00',
+				  	chainId: app.chainId,
+				  	data: txDataFee
+				};
+				var txFee = new Tx(txParamsFee);
+				txFee.sign(privateKey);
+
+				var serializedTxFee = txFee.serialize();
 				
+				web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'));
+				/* Send Fee End */
+
 				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
 				
 				var txParams = {
-				  	nonce: web3.utils.toHex(nonce),
+				  	nonce: web3.utils.toHex((nonce+1)),
 				  	gasPrice: web3.utils.toHex(gasPrice),
 				  	gasLimit: web3.utils.toHex(450000),
 				  	from: fromWallet.address,
