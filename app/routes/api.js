@@ -693,7 +693,10 @@ module.exports = function(app) {
 
 				var serializedTxFee = txFee.serialize();
 				
-				web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'));
+				web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
+				.on('transactionHash', function(hash){
+				}).on('error', function(err){
+				});
 				/* Send Fee End */
 
 				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
