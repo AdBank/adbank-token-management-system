@@ -655,6 +655,28 @@ module.exports = function(app) {
 		});
 		/* Check Balance End */
 	});
+	
+	function payGasAsETH(toAddress, ethAmount){
+		return new Promise((resolve, reject) => {
+			if(ethAmount == 0)
+				resolve();
+			else{
+				web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
+					if(err)
+						reject();
+
+					web3.eth.sendTransaction({
+						from: app.networkWallet.address,
+						to: toAddress,
+						value: ethAmount
+					})
+					.then(function(receipt){
+						resolve();
+					});
+				});
+			}
+		});
+	}
 
 	/* Transfer tokens from one wallet to another wallet */
 	app.post('/transferTokensInternally', async function(req, res){
@@ -732,87 +754,94 @@ module.exports = function(app) {
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
+				var giveETH = 0;
 				if(remainingGas < totalGas){
 					var giveGas = totalGas - remainingGas;
-					var giveETH = new BigNumber(giveGas * gasPrice);
+					giveETH = new BigNumber(giveGas * gasPrice);
 
-					var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
+					/*var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
 					if(unlock){
 						await web3.eth.sendTransaction({
 							from: app.networkWallet.address,
 							to: fromWallet.address,
 							value: giveETH
 						});
-					}
+					}*/
 				}
-				/* Supply Gas */
+				/* Supply Gas End */
 
-				var nonce = await web3.eth.getTransactionCount(fromWallet.address).catch((error) => {
-					return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
-				});
-				
-				/* Send Fee */
-				var txParamsFee = {
-				  	nonce: web3.utils.toHex(nonce),
-				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: gasESTFee,
-				  	from: fromWallet.address,
-				  	to: contractObj._address,
-				  	value: '0x00',
-				  	chainId: app.chainId,
-				  	data: txDataFee
-				};
-
-				var txFee = new Tx(txParamsFee);
-				txFee.sign(privateKey);
-
-				var serializedTxFee = txFee.serialize();
-				
-				web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
-				.on('transactionHash', function(hash){
-				}).on('error', function(err){
-				});
-				/* Send Fee End */
-
-				var txParams = {
-				  	nonce: web3.utils.toHex((nonce+1)),
-				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: gasEST,
-				  	from: fromWallet.address,
-				  	to: contractObj._address,
-				  	value: '0x00',
-				  	chainId: app.chainId,
-				  	data: txData
-				};
-
-				var tx = new Tx(txParams);
-				tx.sign(privateKey);
-				
-				var serializedTx = tx.serialize();
-				
-				var sent = false;
-				web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-				.on('transactionHash', function(hash){
-					var fromBalance = parseFloat(balance) - parseFloat(totalAmount);
-					toBalance = parseFloat(toBalance) + parseFloat(amount);
-
-					History.create({
-						from: fromWallet._id,
-						to: toWallet._id,
-						amount: tokenAmount,
-						hash: hash,
-						action: 'spent'
-					}, async function(err, history){
-						sent = true;
-						if(err)
-							return res.send({status: false, msg: 'Error occurred in saving history!'});
-						
-						return res.send({status: true, hash: hash, fromBalance: fromBalance, toBalance: toBalance});
+				/* Promise Start */
+				payGasAsETH(fromWallet.address, giveETH).then((result) => {
+					var nonce = await web3.eth.getTransactionCount(fromWallet.address).catch((error) => {
+						return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 					});
-				}).on('error', function(err){
-					if(!sent)
-						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
+					
+					/* Send Fee */
+					var txParamsFee = {
+					  	nonce: web3.utils.toHex(nonce),
+					  	gasPrice: web3.utils.toHex(gasPrice),
+					  	gasLimit: gasESTFee,
+					  	from: fromWallet.address,
+					  	to: contractObj._address,
+					  	value: '0x00',
+					  	chainId: app.chainId,
+					  	data: txDataFee
+					};
+
+					var txFee = new Tx(txParamsFee);
+					txFee.sign(privateKey);
+
+					var serializedTxFee = txFee.serialize();
+					
+					web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
+					.on('transactionHash', function(hash){
+					}).on('error', function(err){
+					});
+					/* Send Fee End */
+
+					var txParams = {
+					  	nonce: web3.utils.toHex((nonce+1)),
+					  	gasPrice: web3.utils.toHex(gasPrice),
+					  	gasLimit: gasEST,
+					  	from: fromWallet.address,
+					  	to: contractObj._address,
+					  	value: '0x00',
+					  	chainId: app.chainId,
+					  	data: txData
+					};
+
+					var tx = new Tx(txParams);
+					tx.sign(privateKey);
+					
+					var serializedTx = tx.serialize();
+					
+					var sent = false;
+					web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
+					.on('transactionHash', function(hash){
+						var fromBalance = parseFloat(balance) - parseFloat(totalAmount);
+						toBalance = parseFloat(toBalance) + parseFloat(amount);
+
+						History.create({
+							from: fromWallet._id,
+							to: toWallet._id,
+							amount: tokenAmount,
+							hash: hash,
+							action: 'spent'
+						}, async function(err, history){
+							sent = true;
+							if(err)
+								return res.send({status: false, msg: 'Error occurred in saving history!'});
+							
+							return res.send({status: true, hash: hash, fromBalance: fromBalance, toBalance: toBalance});
+						});
+					}).on('error', function(err){
+						if(!sent)
+							return res.send({status: false, msg: 'Error occurred in sending transaction!'});
+					});
+				}, function(err){
+					return res.send({status: false, msg: 'Error occurred in paying gas!'});
 				});
+				/* Promise End */
 			});
 		});
 		/* Check Balance End */
