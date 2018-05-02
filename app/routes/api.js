@@ -669,9 +669,11 @@ module.exports = function(app) {
 						from: app.networkWallet.address,
 						to: toAddress,
 						value: ethAmount
-					})
-					.then(function(receipt){
-						resolve();
+					}, function(err, hash){
+						if(err)
+							reject();
+						else
+							resolve();
 					});
 				});
 			}
