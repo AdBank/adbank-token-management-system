@@ -570,10 +570,18 @@ module.exports = function(app) {
 			var giveETH = 0;
 			var flag = false;
 
+			console.log('total - ' + totalETH);
+			console.log('remaining - ' + remainingETH);
+			
 			if(remainingETH < totalETH){
 				giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
 				flag = true;
 			}
+
+			
+			console.log('giveETH - ' + giveETH);
+
+
 			/* Supply Gas End */
 
 			/* Promise Start */
