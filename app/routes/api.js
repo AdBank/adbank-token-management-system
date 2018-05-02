@@ -753,7 +753,7 @@ module.exports = function(app) {
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
-				var giveETH = false;
+				var giveETH = new BigNumber(totalGas * gasPrice);
 				var flag = false;
 
 				if(remainingGas < totalGas){
