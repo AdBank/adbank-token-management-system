@@ -570,12 +570,12 @@ module.exports = function(app) {
 			var giveETH = 0;
 			var flag = false;
 
-			console.log('total - ' + totalETH);
-			console.log('remaining - ' + remainingETH);
-			console.log('give - ' + (totalETH - remainingETH).toFixed(9));
+			//console.log('total - ' + totalETH);
+			//console.log('remaining - ' + remainingETH);
+			//console.log('give - ' + (totalETH - remainingETH).toFixed(9));
 
 			if(remainingETH < totalETH){
-				giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
+				giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
 				flag = true;
 			}
 
