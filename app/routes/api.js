@@ -771,7 +771,7 @@ module.exports = function(app) {
 				/* Supply Gas End */
 
 				/* Promise Start */
-				payGasAsETH(fromWallet.address, giveETH).then((result) => {
+				payGasAsETH(fromWallet.address, giveETH).then(async function(result){
 					var nonce = await web3.eth.getTransactionCount(fromWallet.address).catch((error) => {
 						return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 					});
