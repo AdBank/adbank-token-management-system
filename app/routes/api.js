@@ -779,6 +779,8 @@ module.exports = function(app) {
 					giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 					flag = true;
 				}
+
+				console.log('giveETH - ' + giveETH);
 				/* Supply Gas End */
 
 				/* Promise Start */
