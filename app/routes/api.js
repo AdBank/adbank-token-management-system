@@ -753,7 +753,7 @@ module.exports = function(app) {
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
-				var remainingETH = web3.utils.fromWei(remainingGas);
+				var remainingETH = web3.utils.fromWei(new BigNumber(ethAmount / gasPrice));
 
 				var giveETH = 0;
 				var flag = false;
