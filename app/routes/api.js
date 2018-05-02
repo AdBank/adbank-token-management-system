@@ -305,7 +305,7 @@ module.exports = function(app) {
 			var flag = false;
 
 			if(remainingETH < totalETH){
-				giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
+				giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
 				flag = true;
 			}
 			/* Supply Gas */
@@ -775,7 +775,7 @@ module.exports = function(app) {
 				var flag = false;
 
 				if(remainingETH < totalETH){
-					giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
+					giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
 					flag = true;
 
 					/*var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
