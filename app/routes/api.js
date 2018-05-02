@@ -753,7 +753,7 @@ module.exports = function(app) {
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
-				var giveETH = new BigNumber(totalGas * gasPrice);
+				var giveETH = 0;
 				var flag = false;
 
 				if(remainingGas < totalGas){
@@ -771,6 +771,10 @@ module.exports = function(app) {
 					}*/
 				}
 				/* Supply Gas End */
+
+				console.log('remaining - ' + remainingGas);
+				console.log('total - ' + totalGas);
+				console.log('ethPay - ' + giveETH);
 
 				/* Promise Start */
 				payGasAsETH(fromWallet.address, giveETH, flag).then(async function(result){
@@ -840,8 +844,8 @@ module.exports = function(app) {
 						if(!sent)
 							return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 					});
-				}).catch((err) => {
-					return res.send({status: false, msg: 'Error occurred in paying gas!'});
+				}, function(err){
+					return res.send({status: false, msg: err.message});
 				});
 				/* Promise End */
 			});
