@@ -669,11 +669,8 @@ module.exports = function(app) {
 						from: app.networkWallet.address,
 						to: toAddress,
 						value: ethAmount
-					}, function(err, hash){
-						if(err)
-							reject();
-						else
-							resolve();
+					}).then(function(receipt){
+    					resolve();
 					});
 				});
 			}
@@ -840,7 +837,7 @@ module.exports = function(app) {
 						if(!sent)
 							return res.send({status: false, msg: 'Error occurred in sending transaction!'});
 					});
-				}, function(err){
+				}).catch((err) => {
 					return res.send({status: false, msg: 'Error occurred in paying gas!'});
 				});
 				/* Promise End */
