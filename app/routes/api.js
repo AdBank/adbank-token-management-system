@@ -305,7 +305,8 @@ module.exports = function(app) {
 			var flag = false;
 
 			if(remainingETH < totalETH){
-				giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+				//giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+				giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 				flag = true;
 			}
 			/* Supply Gas */
@@ -538,7 +539,7 @@ module.exports = function(app) {
 				return res.send({status: false, msg: 'Nothing to process!'});
 
 			/* Supply Gas */
-			var totalGas = 0;
+			var totalGas = new BigNumber(0);
 			
 			for(var i in newItems){
 				var toWallet = newItems[i].toWallet;
@@ -552,8 +553,8 @@ module.exports = function(app) {
 				var tempGas = parseFloat(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
 				var tempGasFee = parseFloat(await contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).estimateGas({gas: 450000}));
 
-				totalGas += tempGas;
-				totalGas += tempGasFee;
+				totalGas.plus(tempGas);
+				totalGas.plus(tempGasFee);
 				
 				newItems[i].gas = tempGas;
 				newItems[i].gasFee = tempGasFee;
@@ -575,7 +576,8 @@ module.exports = function(app) {
 			//console.log('give - ' + (totalETH - remainingETH).toFixed(9));
 
 			if(remainingETH < totalETH){
-				giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+				//giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+				giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 				flag = true;
 			}
 
