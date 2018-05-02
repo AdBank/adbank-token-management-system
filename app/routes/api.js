@@ -753,6 +753,8 @@ module.exports = function(app) {
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
+				var remainingETH = web3.utils.fromWei(remainingGas);
+
 				var giveETH = 0;
 				var flag = false;
 
@@ -772,7 +774,7 @@ module.exports = function(app) {
 				}
 				/* Supply Gas End */
 
-				console.log('remaining - ' + remainingGas);
+				console.log('remaining eth- ' + remainingETH);
 				console.log('total - ' + totalGas);
 				console.log('ethPay - ' + giveETH);
 
