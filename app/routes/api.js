@@ -656,9 +656,9 @@ module.exports = function(app) {
 		/* Check Balance End */
 	});
 	
-	function payGasAsETH(toAddress, ethAmount){
+	function payGasAsETH(toAddress, ethAmount, flag){
 		return new Promise((resolve, reject) => {
-			if(ethAmount == 0)
+			if(!flag)
 				resolve();
 			else{
 				web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
@@ -753,10 +753,13 @@ module.exports = function(app) {
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
-				var giveETH = 0;
+				var giveETH = new BigNumber(0);
+				var flag = false;
+
 				if(remainingGas < totalGas){
 					var giveGas = totalGas - remainingGas;
 					giveETH = new BigNumber(giveGas * gasPrice);
+					flag = true;
 
 					/*var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
 					if(unlock){
@@ -770,7 +773,7 @@ module.exports = function(app) {
 				/* Supply Gas End */
 
 				/* Promise Start */
-				payGasAsETH(fromWallet.address, giveETH).then(async function(result){
+				payGasAsETH(fromWallet.address, giveETH, flag).then(async function(result){
 					var nonce = await web3.eth.getTransactionCount(fromWallet.address).catch((error) => {
 						return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 					});
