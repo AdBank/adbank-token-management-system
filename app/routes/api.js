@@ -288,15 +288,18 @@ module.exports = function(app) {
 				amount = balance;
 
 			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
+			
+			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
 
 			/* Supply Gas */
 			var ethAmount = new BigNumber(await web3.eth.getBalance(wallet.address));
 			var gasPrice = await web3.eth.getGasPrice();
 
 			var remainingGas = new BigNumber(ethAmount / gasPrice);
+			var gasEST = parseFloat(await contractObj.methods.transfer(address, tokenAmount).estimateGas({gas: 450000}));
 
-			if(remainingGas < 450000){
-				var giveGas = 450000 - remainingGas;
+			if(remainingGas < gasEST){
+				var giveGas = gasEST - remainingGas;
 				var giveETH = new BigNumber(giveGas * gasPrice);
 
 				var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
@@ -319,12 +322,10 @@ module.exports = function(app) {
 				return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 			});
 
-			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
-
 			var txParams = {
 			  	nonce: web3.utils.toHex(nonce),
 			  	gasPrice: web3.utils.toHex(gasPrice),
-			  	gasLimit: web3.utils.toHex(450000),
+			  	gasLimit: gasEST,
 			  	from: wallet.address,
 			  	to: contractObj._address,
 			  	value: '0x00',
@@ -358,7 +359,7 @@ module.exports = function(app) {
 				});
 			}).on('error', function(err){
 				if(!sent)
-					return res.send({status: false, msg: 'Error occurred in sending transaction!'});
+					return res.send({status: false, msg: err.message});
 			});
 		});
 	});
@@ -493,7 +494,7 @@ module.exports = function(app) {
 			var privateKey = new Buffer(privateKeyStr, 'hex');
 				
 			var gasPrice = await web3.eth.getGasPrice();
-
+			
 			var processed = 0; // Total count of transactions that have been processed in real.
 			
 			var newItems = [];
@@ -511,19 +512,21 @@ module.exports = function(app) {
 				if(!toWallet)
 					continue;
 
-				if(items[i].balance && items[i].balance != 0){
-					items[i].balance += parseFloat(items[i].amount);
-				}else{
-					var tempResult = await contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address});
-					var tempBalance = tempResult / Math.pow(10, app.contract.decimals);
+				items[i].toWallet = toWallet;
 
-					items[i].balance = parseFloat(tempBalance) + parseFloat(items[i].amount); //Fresh Balance
-				}
+				var tempResult = await contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address});
+				var tempBalance = tempResult / Math.pow(10, app.contract.decimals);
 
-				if(items[i].amount > balance)
+				var amount = parseFloat(items[i].amount);
+				var amountFee = parseFloat(amount * app.percent / 100);
+				var totalAmount = amount + amountFee;
+
+				items[i].balance = parseFloat(tempBalance) + amount; //Fresh Balance
+
+				if(totalAmount > balance)
 					continue;
 
-				balance -= items[i].amount;
+				balance -= totalAmount;
 
 				newItems.push(items[i]);
 			} /* End For */
@@ -531,19 +534,84 @@ module.exports = function(app) {
 			if(newItems.length == 0)
 				return res.send({status: false, msg: 'Nothing to process!'});
 
-			for(var i in newItems){ /* Begin For */
-				var toWallet = await Wallet.findOne({_id: newItems[i].toWalletId});
-				newItems[i].toWallet = toWallet;
+			/* Supply Gas */
+			var totalGas = 0;
+			
+			for(var i in newItems){
+				var toWallet = newItems[i].toWallet;
+				
+				var amount = parseFloat(newItems[i].amount);
+				var amountFee = parseFloat(amount * app.percent / 100);
+				
+				var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
+				var tokenAmountFee = new BigNumber(amountFee * Math.pow(10, app.contract.decimals));
 
-				var tokenAmount = new BigNumber(newItems[i].amount * Math.pow(10, app.contract.decimals));
+				var tempGas = parseFloat(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
+				var tempGasFee = parseFloat(await contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).estimateGas({gas: 450000}));
+
+				totalGas += tempGas;
+				totalGas += tempGasFee;
+				
+				newItems[i].gas = tempGas;
+				newItems[i].gasFee = tempGasFee;
 				newItems[i].tokenAmount = tokenAmount;
+				newItems[i].tokenAmountFee = tokenAmountFee;
+			}
+
+			var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
+			var remainingGas = new BigNumber(ethAmount / gasPrice);
+
+			if(remainingGas < totalGas){
+				var giveGas = totalGas - remainingGas;
+				var giveETH = new BigNumber(giveGas * gasPrice);
+
+				var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
+				if(unlock){
+					await web3.eth.sendTransaction({
+						from: app.networkWallet.address,
+						to: fromWallet.address,
+						value: giveETH
+					});
+				}
+			}
+			/* Supply Gas End */
+
+			for(var i in newItems){ /* Begin For */
+				var tokenAmount = new BigNumber(newItems[i].tokenAmount);
+				var tokenAmountFee = new BigNumber(newItems[i].tokenAmountFee);
+				var gas = newItems[i].gas;
+				var gasFee = newItems[i].gasFee;
 
 				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
+				var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).encodeABI();
+
+				/* Send Fee */
+				var txParamsFee = {
+				  	nonce: web3.utils.toHex(nonce++),
+				  	gasPrice: web3.utils.toHex(gasPrice),
+				  	gasLimit: gasFee,
+				  	from: fromWallet.address,
+				  	to: contractObj._address,
+				  	value: '0x00',
+				  	chainId: app.chainId,
+				  	data: txDataFee
+				};
+
+				var txFee = new Tx(txParamsFee);
+				txFee.sign(privateKey);
+
+				var serializedTxFee = txFee.serialize();
 				
+				web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
+				.on('transactionHash', function(hash){
+				}).on('error', function(err){
+				});
+				/* Send Fee End */
+
 				var txParams = {
 				  	nonce: web3.utils.toHex(nonce++),
 				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: web3.utils.toHex(450000),
+				  	gasLimit: gas,
 				  	from: fromWallet.address,
 				  	to: contractObj._address,
 				  	value: '0x00',
@@ -627,7 +695,7 @@ module.exports = function(app) {
 		if(amount == 0)
 			return res.send({status: false, msg: 'Token amount shouldn\'t be equal to 0!'});
 
-		var fee = parseFloat(amount * 0.25); // Fee to Revenue Wallet
+		var fee = parseFloat(amount * app.percent / 100); // Fee to Revenue Wallet
 		var totalAmount = parseFloat(amount) + parseFloat(fee);
 
 		/* Check Balance */
@@ -641,27 +709,6 @@ module.exports = function(app) {
 			if(totalAmount > balance)
 				return res.send({status: false, msg: 'Insufficient balance!'});
 
-			/* Supply Gas */
-			var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
-			var gasPrice = await web3.eth.getGasPrice();
-
-			var remainingGas = new BigNumber(ethAmount / gasPrice);
-
-			if(remainingGas < 900000){
-				var giveGas = 900000 - remainingGas;
-				var giveETH = new BigNumber(giveGas * gasPrice);
-
-				var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
-				if(unlock){
-					await web3.eth.sendTransaction({
-						from: app.networkWallet.address,
-						to: fromWallet.address,
-						value: giveETH
-					});
-				}
-			}
-			/* Supply Gas */
-
 			contractObj.methods.balanceOf(toWallet.address).call({from: app.contract.owner_address})
 			.then(async function(result){
 				var toBalance = result / Math.pow(10, app.contract.decimals);
@@ -672,22 +719,50 @@ module.exports = function(app) {
 				var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
 				var privateKey = new Buffer(privateKeyStr, 'hex');
 				
+				/* Supply Gas */
+				var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, feeAmount).encodeABI();
+				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
+
+				var gasESTFee = parseFloat(await contractObj.methods.transfer(app.revenueWallet.address, feeAmount).estimateGas({gas: 450000}));
+				var gasEST = parseFloat(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
+				var totalGas = new BigNumber(gasEST + gasESTFee);
+
+				var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
+				var gasPrice = await web3.eth.getGasPrice();
+
+				var remainingGas = new BigNumber(ethAmount / gasPrice);
+				
+				if(remainingGas < totalGas){
+					var giveGas = totalGas - remainingGas;
+					var giveETH = new BigNumber(giveGas * gasPrice);
+
+					var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
+					if(unlock){
+						await web3.eth.sendTransaction({
+							from: app.networkWallet.address,
+							to: fromWallet.address,
+							value: giveETH
+						});
+					}
+				}
+				/* Supply Gas */
+
 				var nonce = await web3.eth.getTransactionCount(fromWallet.address).catch((error) => {
 					return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 				});
 				
 				/* Send Fee */
-				var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, feeAmount).encodeABI();
 				var txParamsFee = {
 				  	nonce: web3.utils.toHex(nonce),
 				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: web3.utils.toHex(450000),
+				  	gasLimit: gasESTFee,
 				  	from: fromWallet.address,
 				  	to: contractObj._address,
 				  	value: '0x00',
 				  	chainId: app.chainId,
 				  	data: txDataFee
 				};
+
 				var txFee = new Tx(txParamsFee);
 				txFee.sign(privateKey);
 
@@ -699,12 +774,10 @@ module.exports = function(app) {
 				});
 				/* Send Fee End */
 
-				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
-				
 				var txParams = {
 				  	nonce: web3.utils.toHex((nonce+1)),
 				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: web3.utils.toHex(450000),
+				  	gasLimit: gasEST,
 				  	from: fromWallet.address,
 				  	to: contractObj._address,
 				  	value: '0x00',
@@ -720,7 +793,7 @@ module.exports = function(app) {
 				var sent = false;
 				web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
 				.on('transactionHash', function(hash){
-					var fromBalance = parseFloat(balance) - parseFloat(amount);
+					var fromBalance = parseFloat(balance) - parseFloat(totalAmount);
 					toBalance = parseFloat(toBalance) + parseFloat(amount);
 
 					History.create({
