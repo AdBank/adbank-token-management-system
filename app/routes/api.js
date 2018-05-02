@@ -572,6 +572,7 @@ module.exports = function(app) {
 
 			console.log('total - ' + totalETH);
 			console.log('remaining - ' + remainingETH);
+			console.log('give - ' + (totalETH - remainingETH));
 			
 			if(remainingETH < totalETH){
 				giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
