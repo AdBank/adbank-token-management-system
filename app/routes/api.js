@@ -553,8 +553,8 @@ module.exports = function(app) {
 				var tempGas = parseFloat(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
 				var tempGasFee = parseFloat(await contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).estimateGas({gas: 450000}));
 
-				totalGas.plus(tempGas);
-				totalGas.plus(tempGasFee);
+				totalGas = totalGas.plus(tempGas);
+				totalGas = totalGas.plus(tempGasFee);
 				
 				newItems[i].gas = tempGas;
 				newItems[i].gasFee = tempGasFee;
