@@ -775,17 +775,9 @@ module.exports = function(app) {
 				var flag = false;
 
 				if(remainingETH < totalETH){
-					giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+					//giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+					giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 					flag = true;
-
-					/*var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
-					if(unlock){
-						await web3.eth.sendTransaction({
-							from: app.networkWallet.address,
-							to: fromWallet.address,
-							value: giveETH
-						});
-					}*/
 				}
 				/* Supply Gas End */
 
