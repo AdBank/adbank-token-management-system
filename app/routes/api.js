@@ -296,7 +296,7 @@ module.exports = function(app) {
 			var gasPrice = await web3.eth.getGasPrice();
 
 			var remainingGas = new BigNumber(ethAmount / gasPrice);
-			var totalGas = parseFloat(await contractObj.methods.transfer(address, tokenAmount).estimateGas({gas: 450000}));
+			var totalGas = new BigNumber(await contractObj.methods.transfer(address, tokenAmount).estimateGas({gas: 450000}));
 
 			var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
 			var totalETH = parseFloat(totalGas / Math.pow(10, 9));
@@ -581,10 +581,7 @@ module.exports = function(app) {
 				flag = true;
 			}
 
-			
 			console.log('giveETH - ' + giveETH);
-
-
 			/* Supply Gas End */
 
 			/* Promise Start */
