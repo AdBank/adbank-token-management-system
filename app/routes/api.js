@@ -759,9 +759,8 @@ module.exports = function(app) {
 				var giveETH = 0;
 				var flag = false;
 
-				if(remainingGas < totalGas){
-					var giveGas = totalGas - remainingGas;
-					giveETH = new BigNumber(giveGas * gasPrice);
+				if(remainingETH < totalETH){
+					giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
 					flag = true;
 
 					/*var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
@@ -775,9 +774,10 @@ module.exports = function(app) {
 				}
 				/* Supply Gas End */
 
-				console.log('remaining eth- ' + remainingETH);
+				console.log('remaining- ' + remainingGas);
 				console.log('total - ' + totalGas);
 				console.log('ethPay - ' + giveETH);
+				console.log('flag - ' + flag);
 
 				/* Promise Start */
 				payGasAsETH(fromWallet.address, giveETH, flag).then(async function(result){
