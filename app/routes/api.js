@@ -290,6 +290,8 @@ module.exports = function(app) {
 			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
 			
 			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
+			var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
+			var privateKey = new Buffer(privateKeyStr, 'hex');
 
 			/* Supply Gas */
 			var ethAmount = new BigNumber(await web3.eth.getBalance(wallet.address));
@@ -311,13 +313,11 @@ module.exports = function(app) {
 			}
 			/* Supply Gas */
 
+			console.log('giveETH - ' + giveETH);
+
 			/* Promise Start */
 			payGasAsETH(wallet.address, giveETH, flag).then(async function(result){
 				/* Withdraw Tokens */
-				var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
-		
-				var privateKey = new Buffer(privateKeyStr, 'hex');
-
 				var nonce = await web3.eth.getTransactionCount(wallet.address).catch((error) => {
 					return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 				});
