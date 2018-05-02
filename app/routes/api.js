@@ -561,100 +561,103 @@ module.exports = function(app) {
 				newItems[i].tokenAmountFee = tokenAmountFee;
 			}
 
+			var totalETH = parseFloat(totalGas / Math.pow(10, 9));
 			var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
+
 			var remainingGas = new BigNumber(ethAmount / gasPrice);
+			var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
 
-			if(remainingGas < totalGas){
-				var giveGas = totalGas - remainingGas;
-				var giveETH = new BigNumber(giveGas * gasPrice);
+			var giveETH = 0;
+			var flag = false;
 
-				var unlock = await web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0);
-				if(unlock){
-					await web3.eth.sendTransaction({
-						from: app.networkWallet.address,
-						to: fromWallet.address,
-						value: giveETH
-					});
-				}
+			if(remainingETH < totalETH){
+				giveETH = new BigNumber((totalETH - remainingETH) * gasPrice * Math.pow(10, 9));
+				flag = true;
 			}
 			/* Supply Gas End */
 
-			for(var i in newItems){ /* Begin For */
-				var tokenAmount = new BigNumber(newItems[i].tokenAmount);
-				var tokenAmountFee = new BigNumber(newItems[i].tokenAmountFee);
-				var gas = newItems[i].gas;
-				var gasFee = newItems[i].gasFee;
+			/* Promise Start */
+			payGasAsETH(fromWallet.address, giveETH, flag).then(async function(result){
+				for(var i in newItems){ /* Begin For */
+					var tokenAmount = new BigNumber(newItems[i].tokenAmount);
+					var tokenAmountFee = new BigNumber(newItems[i].tokenAmountFee);
+					var gas = newItems[i].gas;
+					var gasFee = newItems[i].gasFee;
 
-				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
-				var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).encodeABI();
+					var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
+					var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).encodeABI();
 
-				/* Send Fee */
-				var txParamsFee = {
-				  	nonce: web3.utils.toHex(nonce++),
-				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: gasFee,
-				  	from: fromWallet.address,
-				  	to: contractObj._address,
-				  	value: '0x00',
-				  	chainId: app.chainId,
-				  	data: txDataFee
-				};
+					/* Send Fee */
+					var txParamsFee = {
+					  	nonce: web3.utils.toHex(nonce++),
+					  	gasPrice: web3.utils.toHex(gasPrice),
+					  	gasLimit: gasFee,
+					  	from: fromWallet.address,
+					  	to: contractObj._address,
+					  	value: '0x00',
+					  	chainId: app.chainId,
+					  	data: txDataFee
+					};
 
-				var txFee = new Tx(txParamsFee);
-				txFee.sign(privateKey);
+					var txFee = new Tx(txParamsFee);
+					txFee.sign(privateKey);
 
-				var serializedTxFee = txFee.serialize();
-				
-				web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
-				.on('transactionHash', function(hash){
-				}).on('error', function(err){
-				});
-				/* Send Fee End */
+					var serializedTxFee = txFee.serialize();
+					
+					web3.eth.sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
+					.on('transactionHash', function(hash){
+					}).on('error', function(err){
+					});
+					/* Send Fee End */
 
-				var txParams = {
-				  	nonce: web3.utils.toHex(nonce++),
-				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: gas,
-				  	from: fromWallet.address,
-				  	to: contractObj._address,
-				  	value: '0x00',
-				  	chainId: app.chainId,
-				  	data: txData
-				};
+					var txParams = {
+					  	nonce: web3.utils.toHex(nonce++),
+					  	gasPrice: web3.utils.toHex(gasPrice),
+					  	gasLimit: gas,
+					  	from: fromWallet.address,
+					  	to: contractObj._address,
+					  	value: '0x00',
+					  	chainId: app.chainId,
+					  	data: txData
+					};
 
-				var tx = new Tx(txParams);
-				tx.sign(privateKey);
-				
-				var serializedTx = tx.serialize();
-				
-				var transaction = web3.eth.sendSignedTransaction.request('0x' + serializedTx.toString('hex'), 'transactionHash', function(err, hash){
-					processed++;
+					var tx = new Tx(txParams);
+					tx.sign(privateKey);
+					
+					var serializedTx = tx.serialize();
+					
+					var transaction = web3.eth.sendSignedTransaction.request('0x' + serializedTx.toString('hex'), 'transactionHash', function(err, hash){
+						processed++;
 
-					if(err){
-						newItems[processed-1].status = 'notprocessed';
-					}else{
-						newItems[processed-1].status = 'processed';
-						newItems[processed-1].hash = hash;
-	
-						History.create({
-							from: fromWallet._id,
-							to: newItems[processed-1].toWallet._id,
-							amount: newItems[processed-1].tokenAmount,
-							hash: hash,
-							action: 'spent'
-						}, function(err, history){
-							//console.log(history);
-						});
-					}
+						if(err){
+							newItems[processed-1].status = 'notprocessed';
+						}else{
+							newItems[processed-1].status = 'processed';
+							newItems[processed-1].hash = hash;
+		
+							History.create({
+								from: fromWallet._id,
+								to: newItems[processed-1].toWallet._id,
+								amount: newItems[processed-1].tokenAmount,
+								hash: hash,
+								action: 'spent'
+							}, function(err, history){
+								//console.log(history);
+							});
+						}
 
-					if(processed == newItems.length)
-						return res.send({status: true, items: newItems, balance: balance});
-				});
+						if(processed == newItems.length)
+							return res.send({status: true, items: newItems, balance: balance});
+					});
 
-				batch.add(transaction);
-			} /* End For */
+					batch.add(transaction);
+				} /* End For */
 
-			batch.execute();
+				batch.execute();
+			}, function(err){
+				return res.send({status: false, msg: err.message});
+			});
+			/* Promise End */
 		});
 		/* Check Balance End */
 	});
