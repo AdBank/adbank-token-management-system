@@ -298,7 +298,8 @@ module.exports = function(app) {
 			var gasPrice = await web3.eth.getGasPrice();
 
 			var remainingGas = new BigNumber(ethAmount / gasPrice);
-			var totalGas = new BigNumber(await contractObj.methods.transfer(address, tokenAmount).estimateGas({gas: 450000}));
+			var totalGasT = parseFloat(await contractObj.methods.transfer(address, tokenAmount).estimateGas({gas: 450000}));
+			var totalGas = new BigNumber(totalGasT);
 
 			var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
 			var totalETH = parseFloat(totalGas / Math.pow(10, 9));
@@ -325,13 +326,15 @@ module.exports = function(app) {
 				var txParams = {
 				  	nonce: web3.utils.toHex(nonce),
 				  	gasPrice: web3.utils.toHex(gasPrice),
-				  	gasLimit: totalGas,
+				  	gasLimit: totalGasT,
 				  	from: wallet.address,
 				  	to: contractObj._address,
 				  	value: '0x00',
 				  	chainId: app.chainId,
 				  	data: txData
 				};
+
+				console.log(txParams);
 
 				var tx = new Tx(txParams);
 				tx.sign(privateKey);
