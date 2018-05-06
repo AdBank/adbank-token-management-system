@@ -735,8 +735,9 @@ module.exports = function(app) {
 				var txDataFee = contractObj.methods.transfer(app.revenueWallet.address, feeAmount).encodeABI();
 				var txData = contractObj.methods.transfer(toWallet.address, tokenAmount).encodeABI();
 
-				var gasESTFee = parseFloat(await contractObj.methods.transfer(app.revenueWallet.address, feeAmount).estimateGas({gas: 450000}));
-				var gasEST = parseFloat(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
+				/* Estimate gas by doubling. Because sometimes, gas is not esitmated correctly and transaction fails! */
+				var gasESTFee = 2*parseInt(await contractObj.methods.transfer(app.revenueWallet.address, feeAmount).estimateGas({gas: 450000}));
+				var gasEST = 2*parseInt(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
 				var totalGas = new BigNumber(gasEST + gasESTFee);
 
 				var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
@@ -752,8 +753,7 @@ module.exports = function(app) {
 				var giveETH = 0;
 				var flag = false;
 
-				if(remainingETH < totalETH){
-					//giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
+				if(remainingETH < totalETH){ // need to supply gas
 					giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 					flag = true;
 				}
