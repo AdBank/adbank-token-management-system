@@ -24,7 +24,7 @@ module.exports = function(app) {
 	contractObj.options.from = app.contract.owner_address;
 
 	/* Turn on system flag */
-	app.post('/system', async function(req, res){
+	app.post('/system', function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
 			key = req.headers['x-api-key'];
@@ -50,7 +50,7 @@ module.exports = function(app) {
 	});
 
 	/* Return Owner Token Balance */
-	app.post('/ownerTokenBalance', async function(req, res){
+	app.post('/ownerTokenBalance', function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
 			key = req.headers['x-api-key'];
@@ -67,7 +67,7 @@ module.exports = function(app) {
 	});
 
 	/* Return Any Holder Token Balance */
-	app.post('/holderTokenBalance', async function(req, res){
+	app.post('/holderTokenBalance', function(req, res){
 		var key = '';
 		if(req.headers['x-api-key'])
 			key = req.headers['x-api-key'];
@@ -149,30 +149,11 @@ module.exports = function(app) {
 			userId: req.body.userId,
 			address: account.address,
 			privateKey: cryptr.encrypt(account.privateKey)
-		}, async function(err, wallet){
+		}, function(err, wallet){
 			if(err)
 				return res.send({status: false, msg: 'Error occurred in creating wallet!'});
 			
 			return res.send({status: true, msg: 'Wallet created successfully!', walletId: wallet._id, walletAddress: account.address});
-			/* We need to send some eth from our gas wallet to created internal wallet */
-			/*web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
-				if(err)
-					return res.send({status: false, msg: 'Unlock failed!', err: err});
-
-				var sent = false;
-
-				web3.eth.sendTransaction({
-					from: app.networkWallet.address,
-					to: account.address,
-					value: web3.utils.toWei('0.01', 'ether')
-				}).on('transactionHash', function(hash){
-					sent = true;
-					return res.send({status: true, msg: 'Wallet created successfully!', walletId: wallet._id, walletAddress: account.address});
-				}).on('error', function(err){
-					if(!sent)
-						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
-				});
-			});*/
 		});
 	});
 
@@ -333,8 +314,6 @@ module.exports = function(app) {
 				  	chainId: app.chainId,
 				  	data: txData
 				};
-
-				console.log(txParams);
 
 				var tx = new Tx(txParams);
 				tx.sign(privateKey);
@@ -574,12 +553,7 @@ module.exports = function(app) {
 			var giveETH = 0;
 			var flag = false;
 
-			//console.log('total - ' + totalETH);
-			//console.log('remaining - ' + remainingETH);
-			//console.log('give - ' + (totalETH - remainingETH).toFixed(9));
-
 			if(remainingETH < totalETH){
-				//giveETH = new BigNumber((totalETH - remainingETH).toFixed(9) * gasPrice * Math.pow(10, 9));
 				giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 				flag = true;
 			}
@@ -767,6 +741,8 @@ module.exports = function(app) {
 
 				var ethAmount = new BigNumber(await web3.eth.getBalance(fromWallet.address));
 				var gasPrice = await web3.eth.getGasPrice();
+
+				console.log('gasPrice - ' + gasPrice);
 
 				var remainingGas = new BigNumber(ethAmount / gasPrice);
 				
