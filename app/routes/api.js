@@ -533,8 +533,9 @@ module.exports = function(app) {
 				var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
 				var tokenAmountFee = new BigNumber(amountFee * Math.pow(10, app.contract.decimals));
 
-				var tempGas = parseFloat(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
-				var tempGasFee = parseFloat(await contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).estimateGas({gas: 450000}));
+				/* Estimate gas by doubling. Because sometimes, gas is estimated incorrectly and transaction fails. */
+				var tempGas = 2*parseInt(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
+				var tempGasFee = 2*parseInt(await contractObj.methods.transfer(app.revenueWallet.address, tokenAmountFee).estimateGas({gas: 450000}));
 
 				totalGas = totalGas.plus(tempGas);
 				totalGas = totalGas.plus(tempGasFee);
