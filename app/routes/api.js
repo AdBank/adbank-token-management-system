@@ -827,7 +827,7 @@ module.exports = function(app) {
 						});
 					}).on('error', function(err){
 						if(!sent)
-							return res.send({status: false, msg: 'Error occurred in sending transaction!'});
+							return res.send({status: false, msg: err.message});
 					});
 				}, function(err){
 					return res.send({status: false, msg: err.message});
