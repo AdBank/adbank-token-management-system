@@ -32,7 +32,7 @@ server.js loads settings for the app
 		Your revenue wallet address
 		When transaction is happening from advertiser to publisher, fee is sent to the fee holder.
 	- password
-		Your revenue wallet password
+		Your revenue wallet password *(No need to have the password because it is just to send token in this wallet)*
 
 --- Platform Explanation ---
 
