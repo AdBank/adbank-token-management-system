@@ -185,7 +185,7 @@ module.exports = function(app) {
 			if(err)
 				return res.send({status: false, msg: 'Unlock failed!', err: err});
 
-			var tokenAmount = new BigNumber(req.body.tokenAmount * Math.pow(10, app.contract.decimals));
+			var tokenAmount = new BigNumber((req.body.tokenAmount * Math.pow(10, app.contract.decimals)).toString());
 			
 			var sent = false;
 
@@ -268,7 +268,7 @@ module.exports = function(app) {
 			if(amount == 0)
 				amount = balance;
 
-			var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
+			var tokenAmount = new BigNumber((amount * Math.pow(10, app.contract.decimals)).toString());
 			
 			var txData = contractObj.methods.transfer(address, tokenAmount).encodeABI();
 			var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
@@ -530,8 +530,8 @@ module.exports = function(app) {
 				var amount = parseFloat(newItems[i].amount);
 				var amountFee = parseFloat(amount * app.percent / 100);
 				
-				var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
-				var tokenAmountFee = new BigNumber(amountFee * Math.pow(10, app.contract.decimals));
+				var tokenAmount = new BigNumber((amount * Math.pow(10, app.contract.decimals)).toString());
+				var tokenAmountFee = new BigNumber((amountFee * Math.pow(10, app.contract.decimals)).toString());
 
 				/* Estimate gas by doubling. Because sometimes, gas is estimated incorrectly and transaction fails. */
 				var tempGas = 2*parseInt(await contractObj.methods.transfer(toWallet.address, tokenAmount).estimateGas({gas: 450000}));
@@ -727,8 +727,8 @@ module.exports = function(app) {
 			.then(async function(result){
 				var toBalance = result / Math.pow(10, app.contract.decimals);
 
-				var tokenAmount = new BigNumber(amount * Math.pow(10, app.contract.decimals));
-				var feeAmount = new BigNumber(fee * Math.pow(10, app.contract.decimals));
+				var tokenAmount = new BigNumber((amount * Math.pow(10, app.contract.decimals)).toString());
+				var feeAmount = new BigNumber((fee * Math.pow(10, app.contract.decimals)).toString());
 
 				var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
 				var privateKey = new Buffer(privateKeyStr, 'hex');
