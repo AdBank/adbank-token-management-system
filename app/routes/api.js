@@ -709,7 +709,10 @@ module.exports = function(app) {
 		if(amount == 0)
 			return res.send({status: false, msg: 'Token amount shouldn\'t be equal to 0!'});
 
+		amount = parseFloat(amount.toFixed(2));
 		var fee = parseFloat(amount * app.percent / 100); // Fee to Revenue Wallet
+		fee = parseFloat(fee.toFixed(2));
+		
 		var totalAmount = parseFloat(amount) + parseFloat(fee);
 
 		/* Check Balance */
