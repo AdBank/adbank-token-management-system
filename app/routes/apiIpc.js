@@ -18,7 +18,7 @@ module.exports = function(app) {
 
 	/* Web3 Initialization */
 	//var web3 = new Web3(new Web3.providers.IpcProvider(app.web3.provider, client));
-	var web3 = new Web3(new Web3.providers.HttpProvider(app.web3.rpc.provider));
+	var web3 = new Web3(new Web3.providers.HttpProvider(app.web3.rpc.provider, client));
 
 	/* Contract Initialization */
 	var contractObj = new web3.eth.Contract(app.contract.abi, app.contract.address);
@@ -52,27 +52,34 @@ module.exports = function(app) {
 
 	/* Return Owner Token Balance */
 	app.post('/ownerTokenBalance', function(req, res){
-		/* Auth Begin */
-		var msg = checkAuth(req);
-		if(msg != '')
-			return res.send({status: false, msg: msg});
-		/* Auth End */
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
 
-		contractObj.methods.balanceOf(app.contract.owner_address).call({from: app.contract.owner_address})
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
+
+		/*contractObj.methods.balanceOf(app.contract.owner_address).call({from: app.contract.owner_address})
 		.then(function(result){
 			var balance = result / Math.pow(10, app.contract.decimals);
 
 			return res.send({status: true, balance: balance});
-		});
+		});*/
+
+		var result = contractObj.methods.balanceOf(app.contract.owner_address).call({from: app.contract.owner_address});
+		var balance = result / Math.pow(10, app.contract.decimals);
+
+		return res.send({status: true, balance: balance});
 	});
 
 	/* Return Any Holder Token Balance */
 	app.post('/holderTokenBalance', function(req, res){
-		/* Auth Begin */
-		var msg = checkAuth(req);
-		if(msg != '')
-			return res.send({status: false, msg: msg});
-		/* Auth End */
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
 
 		if(!req.body.address)
 			return res.send({status: false, msg: 'Address is missing!'});
@@ -92,11 +99,12 @@ module.exports = function(app) {
 
 	/* Return Token Balance By WalletId ( userTokenBalance => walletTokenBalance ) */
 	app.post('/walletTokenBalance', async function(req, res){
-		/* Auth Begin */
-		var msg = checkAuth(req);
-		if(msg != '')
-			return res.send({status: false, msg: msg});
-		/* Auth End */
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
 
 		if(!req.body.walletId)
 			return res.send({status: false, msg: 'Wallet ID is missing!'});
@@ -120,11 +128,15 @@ module.exports = function(app) {
 
 	/* Create internal wallet for user */
 	app.post('/wallet', async function(req, res){
-		/* Auth Begin */
-		var msg = checkAuth(req);
-		if(msg != '')
-			return res.send({status: false, msg: msg});
-		/* Auth End */
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
+		
+		if(!flag)
+			return res.send({status: false, msg: 'System is turned off!'});
 
 		if(!req.body.userId)
 			return res.send({status: false, msg: 'User is missing!'});
@@ -153,11 +165,15 @@ module.exports = function(app) {
 
 	/* Transfer tokens from contract to internal wallet */
 	app.post('/transferTokens', async function(req, res){
-		/* Auth Begin */
-		var msg = checkAuth(req);
-		if(msg != '')
-			return res.send({status: false, msg: msg});
-		/* Auth End */
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
+
+		if(!flag)
+			return res.send({status: false, msg: 'System is turned off!'});
 
 		if(!req.body.walletId || !req.body.tokenAmount || isNaN(req.body.tokenAmount))
 			return res.send({status: false, msg: 'Parameters are missing!'});
@@ -170,11 +186,7 @@ module.exports = function(app) {
 
 		if(!wallet)
 			return res.send({status: false, msg: 'Wallet doesn\'t exist!'});
-
-		/* Transfer tokens using private key */
 		
-		/* Transfer tokens using private key end */
-
 		web3.eth.personal.unlockAccount(app.contract.owner_address, app.contract.password, 0, (err, unlocked) => {
 			if(err)
 				return res.send({status: false, msg: 'Unlock failed!', err: err});
@@ -839,11 +851,15 @@ module.exports = function(app) {
 
 	/* Get history of wallet by wallet ID */
 	app.post('/history', async function(req, res){
-		/* Auth Begin */
-		var msg = checkAuth(req);
-		if(msg != '')
-			return res.send({status: false, msg: msg});
-		/* Auth End */
+		var key = '';
+		if(req.headers['x-api-key'])
+			key = req.headers['x-api-key'];
+
+		if(key != app.key)
+			return res.send({status: false, msg: 'You are not authorised!'});
+
+		if(!flag)
+			return res.send({status: false, msg: 'System is turned off!'});
 
 		if(!req.body.walletId)
 			return res.send({status: false, msg: 'Wallet is missing!'});
@@ -853,18 +869,4 @@ module.exports = function(app) {
 
 		return res.send({status: true, history: history});
 	});
-
-	function checkAuth(req){
-		var key = '';
-		if(req.headers['x-api-key'])
-			key = req.headers['x-api-key'];
-
-		if(key != app.key)
-			return 'You are not authorized!';
-
-		if(!flag)
-			return 'System is turned off!';
-
-		return '';
-	}
 }
