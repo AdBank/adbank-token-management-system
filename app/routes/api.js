@@ -215,7 +215,7 @@ module.exports = function(app) {
 				if(err)
 					return res.send({status: false, msg: 'Error occurred in saving history!'});
 
-				return res.send({status: true, hash: hash, balance: balance});
+				return res.send({status: true, hash: hash, balance: req.body.tokenAmount});
 			});
 		}).on('error', function(err){
 			if(!sent)
