@@ -172,58 +172,65 @@ module.exports = function(app) {
 			return res.send({status: false, msg: 'Wallet doesn\'t exist!'});
 
 		/* Transfer tokens using private key */
+		var tokenAmount = new BigNumber((req.body.tokenAmount * Math.pow(10, app.contract.decimals)).toString());
+		var gasPrice = await web3.eth.getGasPrice();
+
+		var privateKeyStr = stripHexPrefix(cryptr.decrypt(app.contract.privateKey));
+		var privateKey = new Buffer(privateKeyStr, 'hex');
 		
-		/* Transfer tokens using private key end */
+		var txData = contractObj.methods.transfer(wallet.address, tokenAmount).encodeABI();
 
-		web3.eth.personal.unlockAccount(app.contract.owner_address, app.contract.password, 0, (err, unlocked) => {
-			if(err)
-				return res.send({status: false, msg: 'Unlock failed!', err: err});
-
-			var tokenAmount = new BigNumber((req.body.tokenAmount * Math.pow(10, app.contract.decimals)).toString());
-			
-			var sent = false;
-
-			contractObj.methods.balanceOf(wallet.address).call({from: app.contract.owner_address})
-			.then(async function(result){
-				var balance = result / Math.pow(10, app.contract.decimals);
-				balance += parseFloat(req.body.tokenAmount); // Fresh Balance
-
-				contractObj.methods.transfer(wallet.address, tokenAmount).send({
-					from: app.contract.owner_address
-				}).on('transactionHash', function(hash){
-					History.create({
-						from: app.contract.owner_address,
-						to: wallet._id,
-						amount: tokenAmount,
-						hash: hash,
-						action: 'import'
-					}, async function(err, history){
-						sent = true;
-
-						if(err)
-							return res.send({status: false, msg: 'Error occurred in saving history!'});
-
-						return res.send({status: true, hash: hash, balance: balance});
-					});
-				}).on('error', function(err){
-					if(!sent)
-						return res.send({status: false, msg: 'Error occurred in sending transaction!'});
-				});
-			});
+		var nonce = await web3.eth.getTransactionCount(app.contract.owner_address).catch((error) => {
+			return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
 		});
+			
+		var txParams = {
+		  	nonce: web3.utils.toHex(nonce),
+		  	gasPrice: web3.utils.toHex(gasPrice),
+		  	gasLimit: web3.utils.toHex(400000),
+		  	from: app.contract.owner_address,
+		  	to: contractObj._address,
+		  	value: '0x00',
+		  	chainId: app.chainId,
+		  	data: txData
+		};
+
+		var tx = new Tx(txParams);
+		tx.sign(privateKey);
+					
+		var serializedTx = tx.serialize();
+					
+		var sent = false;
+		web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
+		.on('transactionHash', function(hash){
+			History.create({
+				from: app.contract.owner_address,
+				to: wallet._id,
+				amount: tokenAmount,
+				hash: hash,
+				action: 'import'
+			}, async function(err, history){
+				sent = true;
+
+				if(err)
+					return res.send({status: false, msg: 'Error occurred in saving history!'});
+
+				return res.send({status: true, hash: hash, balance: balance});
+			});
+		}).on('error', function(err){
+			if(!sent)
+				return res.send({status: false, msg: err.message});
+		});
+		/* Transfer tokens using private key end */
 	});
 
 	/* Withdraw to external public wallet */
 	app.post('/withdraw', async function(req, res){
-		var key = '';
-		if(req.headers['x-api-key'])
-			key = req.headers['x-api-key'];
-
-		if(key != app.key)
-			return res.send({status: false, msg: 'You are not authorised!'});
-
-		if(!flag)
-			return res.send({status: false, msg: 'System is turned off!'});
+		/* Auth Begin */
+		var msg = checkAuth(req);
+		if(msg != '')
+			return res.send({status: false, msg: msg});
+		/* Auth End */
 
 		if(!req.body.address || !req.body.walletId)
 			return res.send({status: false, msg: 'Parameters are missing!'});
@@ -401,15 +408,11 @@ module.exports = function(app) {
 
 	/* Create multiple internal wallets for users */
 	app.post('/batchWallet', function(req, res){
-		var key = '';
-		if(req.headers['x-api-key'])
-			key = req.headers['x-api-key'];
-
-		if(key != app.key)
-			return res.send({status: false, msg: 'You are not authorised!'});
-		
-		if(!flag)
-			return res.send({status: false, msg: 'System is turned off!'});
+		/* Auth Begin */
+		var msg = checkAuth(req);
+		if(msg != '')
+			return res.send({status: false, msg: msg});
+		/* Auth End */
 
 		if(!req.body.users)
 			return res.send({status: false, msg: 'Users are missing!'});
@@ -473,7 +476,7 @@ module.exports = function(app) {
 
 			var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
 			var privateKey = new Buffer(privateKeyStr, 'hex');
-				
+			
 			var gasPrice = await web3.eth.getGasPrice();
 			
 			var processed = 0; // Total count of transactions that have been processed in real.
@@ -644,21 +647,37 @@ module.exports = function(app) {
 	});
 	
 	function payGasAsETH(toAddress, ethAmount, flag){
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve, reject) => async function(){
 			if(!flag)
 				resolve();
 			else{
-				web3.eth.personal.unlockAccount(app.networkWallet.address, app.networkWallet.password, 0, (err, unlocked) => {
-					if(err)
-						reject();
+				var gasPrice = await web3.eth.getGasPrice();
 
-					web3.eth.sendTransaction({
-						from: app.networkWallet.address,
-						to: toAddress,
-						value: ethAmount
-					}).then(function(receipt){
-    					resolve();
-					});
+				var privateKeyStr = stripHexPrefix(cryptr.decrypt(app.networkWallet.privateKey));
+				var privateKey = new Buffer(privateKeyStr, 'hex');
+				
+				var nonce = await web3.eth.getTransactionCount(app.networkWallet.address).catch((error) => {
+					reject();
+				});
+					
+				var txParams = {
+				  	nonce: web3.utils.toHex(nonce),
+				  	gasPrice: web3.utils.toHex(gasPrice),
+				  	gasLimit: web3.utils.toHex(400000),
+				  	from: app.networkWallet.address,
+				  	to: toAddress,
+				  	value: ethAmount,
+				  	chainId: app.chainId
+				};
+
+				var tx = new Tx(txParams);
+				tx.sign(privateKey);
+							
+				var serializedTx = tx.serialize();
+							
+				web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
+				.then(function(receipt){
+					resolve();
 				});
 			}
 		});
@@ -666,15 +685,11 @@ module.exports = function(app) {
 
 	/* Transfer tokens from one wallet to another wallet */
 	app.post('/transferTokensInternally', async function(req, res){
-		var key = '';
-		if(req.headers['x-api-key'])
-			key = req.headers['x-api-key'];
-
-		if(key != app.key)
-			return res.send({status: false, msg: 'You are not authorised!'});
-
-		if(!flag)
-			return res.send({status: false, msg: 'System is turned off!'});
+		/* Auth Begin */
+		var msg = checkAuth(req);
+		if(msg != '')
+			return res.send({status: false, msg: msg});
+		/* Auth End */
 
 		if(!req.body.fromWalletId || !req.body.toWalletId || !req.body.tokenAmount || isNaN(req.body.tokenAmount))
 			return res.send({status: false, msg: 'Incorrect parameters!'});

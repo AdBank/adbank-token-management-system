@@ -13,8 +13,8 @@ module.exports = {
       '0xf3399d84571fac96eed37cd4b50baee807b67360', // Contract Owner Address
     address:
       process.env.CONTRACT_ADDRESS ||
-      '0x69c215f4d9940948c257ad45a28032b4b3d5cafd', // Address where contract is deployed
-    password: process.env.CONTRACT_PW || 'a', // Contract owner address password
+      '0xb33493741ebb166a29ed471746e03dd113074722', // Address where contract is deployed
+    privateKey: process.env.CONTRACT_PK || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307', // Contract owner private key
     decimals: process.env.CONTRACT_DEC || 18 // Token decimals
   },
   networkWallet: {
@@ -22,13 +22,13 @@ module.exports = {
     address:
       process.env.NET_WALLET_ADDRESS ||
       '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
-    password: process.env.NET_WALLET_PW || 'a' // Network Wallet Password ( You can use contract owner as master eth account )
+    privateKey: process.env.NET_WALLET_PK || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet private key ( You can use contract owner as master eth account )
   },
   revenueWallet: {
     address:
       process.env.REV_WALLET_ADDRESS ||
       '0xf3399d84571fac96eed37cd4b50baee807b67360',
-    password: process.env.REV_WALLET_PW || 'a'
+    privateKey: process.env.REV_WALLET_PK || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307'
   },
   chainId: process.env.CHAIN_ID || 3, // Network Chain ID,
   key: process.env.KEY || '&6831IlYmK33d', // Security Key
