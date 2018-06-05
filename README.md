@@ -28,7 +28,7 @@ There should be some way for the token system to be temporarily shut down so tha
   (NODE_ENV="live" node server.js)
 
 #Network (Dev)
-- geth --dev --datadir ./devnet --rpc --rpcapi admin,eth,miner,net,personal,web3,rpc console
+- geth --dev --datadir ./devnet --rpc --rpcapi admin,eth,miner,net,personal,web3 console
 
 #Network (Ropsten)
 - geth --testnet removedb

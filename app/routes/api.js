@@ -24,8 +24,6 @@ module.exports = function(app) {
 	var contractObj = new web3.eth.Contract(app.contract.abi, app.contract.address);
 	contractObj.options.from = app.contract.owner_address;
 
-	console.log(contractObj);
-	
 	/* Turn on system flag */
 	app.post('/system', function(req, res){
 		var key = '';
@@ -177,7 +175,7 @@ module.exports = function(app) {
 		var tokenAmount = new BigNumber((req.body.tokenAmount * Math.pow(10, app.contract.decimals)).toString());
 		var gasPrice = await web3.eth.getGasPrice();
 
-		var privateKeyStr = stripHexPrefix(cryptr.decrypt(app.contract.privateKey));
+		var privateKeyStr = stripHexPrefix(app.contract.privateKey);
 		var privateKey = new Buffer(privateKeyStr, 'hex');
 		
 		var txData = contractObj.methods.transfer(wallet.address, tokenAmount).encodeABI();
@@ -655,7 +653,7 @@ module.exports = function(app) {
 			else{
 				var gasPrice = await web3.eth.getGasPrice();
 
-				var privateKeyStr = stripHexPrefix(cryptr.decrypt(app.networkWallet.privateKey));
+				var privateKeyStr = stripHexPrefix(app.networkWallet.privateKey);
 				var privateKey = new Buffer(privateKeyStr, 'hex');
 				
 				var nonce = await web3.eth.getTransactionCount(app.networkWallet.address).catch((error) => {
