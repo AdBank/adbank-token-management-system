@@ -3,7 +3,12 @@ module.exports = {
     url : 'mongodb://localhost:27017/adbank'
   },
   web3: {
-    provider: '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
+    ipc: {
+      provider: '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
+    },
+    rpc: {
+      provider: 'http://localhost:8545/'
+    }
   },
   contract: {
     abi: "abi.json", // Contract ABI

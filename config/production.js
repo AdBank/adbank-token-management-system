@@ -3,8 +3,12 @@ module.exports = {
     url: process.env.MONGO_URI || 'mongodb://mongo:27017/adbank'
   },
   web3: {
-    provider:
-      process.env.WEB3_PROVIDER || '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
+    ipc: {
+      provider: process.env.WEB3_PROVIDER || '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
+    },
+    rpc: {
+      provider: process.env.WEB3_RPC_PROVIDER || 'http://localhost:8545/'
+    }
   },
   contract: {
     abi: process.env.CONTRACT_ABI || 'abi.json', // Contract ABI
