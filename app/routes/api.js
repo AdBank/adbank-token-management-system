@@ -17,8 +17,8 @@ module.exports = function(app) {
 	var client = new net.Socket();
 
 	/* Web3 Initialization */
-	//var web3 = new Web3(new Web3.providers.IpcProvider(app.web3.provider, client));
-	var web3 = new Web3(new Web3.providers.HttpProvider(app.web3.rpc.provider));
+	var web3 = new Web3(new Web3.providers.IpcProvider(app.web3.ipc.provider, client));
+	//var web3 = new Web3(new Web3.providers.HttpProvider(app.web3.rpc.provider));
 
 	/* Contract Initialization */
 	var contractObj = new web3.eth.Contract(app.contract.abi, app.contract.address);
