@@ -647,7 +647,7 @@ module.exports = function(app) {
 	});
 	
 	function payGasAsETH(toAddress, ethAmount, flag){
-		return new Promise((resolve, reject) => async function(){
+		return new Promise(async (resolve, reject) => {
 			if(!flag)
 				resolve();
 			else{
@@ -666,7 +666,7 @@ module.exports = function(app) {
 				  	gasLimit: web3.utils.toHex(400000),
 				  	from: app.networkWallet.address,
 				  	to: toAddress,
-				  	value: ethAmount,
+				  	value: web3.utils.toHex(ethAmount),
 				  	chainId: app.chainId
 				};
 
