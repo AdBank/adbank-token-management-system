@@ -1,10 +1,25 @@
 module.exports = {
-  db: {
-    url: process.env.MONGO_URI || 'mongodb://mongo:27017/adbank'
+  // db: {
+  //   url: process.env.MONGO_URI || 'mongodb://mongo:27017/adbank'
+  // },
+  // Server IP
+  ip: process.env.IP || '0.0.0.0',
+
+  name: 'token-management-server',
+  port: process.env.PORT || 8080,
+  mongo: {
+    username: process.env.MONGODB_USER || '',
+    password: process.env.MONGODB_PW || '',
+    uri: process.env.MONGODB_URI || 'mongo',
+    port: process.env.MONGODB_PORT || 27017,
+    db: process.env.MONGODB_DB || 'adbank-tms-prod',
+    args: process.env.MONGODB_ARGS || ''
   },
+
   web3: {
     ipc: {
-      provider: process.env.WEB3_PROVIDER || '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
+      provider:
+        process.env.WEB3_PROVIDER || '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
     },
     rpc: {
       provider: process.env.WEB3_RPC_PROVIDER || 'http://localhost:8545/'
@@ -18,7 +33,9 @@ module.exports = {
     address:
       process.env.CONTRACT_ADDRESS ||
       '0xb33493741ebb166a29ed471746e03dd113074722', // Address where contract is deployed
-    privateKey: process.env.CONTRACT_PK || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307', // Contract owner private key
+    privateKey:
+      process.env.CONTRACT_PK ||
+      'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307', // Contract owner private key
     decimals: process.env.CONTRACT_DEC || 18 // Token decimals
   },
   networkWallet: {
@@ -26,13 +43,17 @@ module.exports = {
     address:
       process.env.NET_WALLET_ADDRESS ||
       '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
-    privateKey: process.env.NET_WALLET_PK || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet private key ( You can use contract owner as master eth account )
+    privateKey:
+      process.env.NET_WALLET_PK ||
+      'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet private key ( You can use contract owner as master eth account )
   },
   revenueWallet: {
     address:
       process.env.REV_WALLET_ADDRESS ||
       '0xf3399d84571fac96eed37cd4b50baee807b67360',
-    privateKey: process.env.REV_WALLET_PK || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307'
+    privateKey:
+      process.env.REV_WALLET_PK ||
+      'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307'
   },
   chainId: process.env.CHAIN_ID || 3, // Network Chain ID,
   key: process.env.KEY || '&6831IlYmK33d', // Security Key

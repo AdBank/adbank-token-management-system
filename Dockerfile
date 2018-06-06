@@ -14,8 +14,6 @@ RUN npm install --production
 RUN apk del make gcc g++ python git && rm -rf /tmp/* /var/cache/apk/* /root/.npm /root/.node-gyp
 ENV NODE_ENV production
 
-#EXPOSE 8080
-EXPOSE 3000
+EXPOSE 8080
 
-#CMD ["npm", "run", "serve"]
-CMD ["npm", "start"]
+CMD ["npm", "run", "serve"]

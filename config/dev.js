@@ -1,6 +1,18 @@
 module.exports = {
-  db: {
-    url: 'mongodb://localhost:27017/adbank'
+  // db: {
+  //   url: 'mongodb://localhost:27017/adbank'
+  // },
+  // Server IP
+  ip: process.env.IP || '0.0.0.0',
+
+  name: 'token-management-server',
+  port: process.env.PORT || 3000,
+  mongo: {
+    username: process.env.MONGODB_USER || '',
+    password: process.env.MONGODB_PW || '',
+    uri: process.env.MONGODB_URI || 'mongo',
+    port: process.env.MONGODB_PORT || 27017,
+    db: process.env.MONGODB_DB || 'adbank-tms-dev'
   },
   web3: {
     ipc: {

@@ -1,0 +1,14 @@
+.gitignore
+dev.dockerfile
+truffle-config.js
+truffle.js
+web3deploy.js
+genesis.json
+DOCUMENT.md
+LIVE_DEPLOY.md
+README.md
+bin/
+contracts/
+migrations/
+node_modules/
+

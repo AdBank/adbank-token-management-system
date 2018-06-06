@@ -2,22 +2,34 @@
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var express = require('express');
+var morgan = require('morgan');
 
 // Configs
-var config = require("./config/"+(process.env.NODE_ENV || 'dev')+".js");
+var config = require('./config/' + (process.env.NODE_ENV || 'dev') + '.js');
+
+// set the uri to mongo depending on environment
+let uri = '';
+if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
+  uri = `mongodb://${config.mongo.uri}:${config.mongo.port}/${config.mongo.db}`;
+} else {
+  uri = `mongodb://${config.mongo.username}:${config.mongo.password}@${
+    config.mongo.uri
+  }/${config.mongo.db}${config.mongo.args}`;
+}
 
 // Connect to the DB
-mongoose.connect(config.db.url);
+mongoose.connect(uri);
 
 // Initialize the Express App
 var app = express();
 
+app.use(morgan('tiny'));
 // web3 configuration
 app.web3 = config.web3;
 
 // Contract Configuration
 app.contract = {};
-app.contract.abi = require("./app/resources/" + config.contract.abi);
+app.contract.abi = require('./app/resources/' + config.contract.abi);
 app.contract.address = config.contract.address;
 app.contract.owner_address = config.contract.owner_address;
 app.contract.privateKey = config.contract.privateKey;
@@ -43,13 +55,19 @@ app.key = config.key;
 
 // For parsing HTTP responses
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-	extended: true
-}));
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
 require('./app/routes/api')(app);
 
 // Start the app with listen and a port number
-app.listen(3000, function(){
-	console.log(`Listening at http://localhost:3000`)
+app.listen(config.port, config.ip, () => {
+  console.log(
+    `[Express] ${config.name} server listening on ${config.port}, in ${app.get(
+      'env'
+    )} mode`
+  );
 });
