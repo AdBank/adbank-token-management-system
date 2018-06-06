@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var express = require('express');
 var morgan = require('morgan');
+var errorHandler = require('errorhandler');
 var http = require('http');
 // Configs
 var config = require('./config/' + (process.env.NODE_ENV || 'dev') + '.js');
@@ -23,7 +24,7 @@ mongoose.connect(uri);
 // Initialize the Express App
 var app = express();
 var server = http.createServer(app);
-app.use(morgan('tiny'));
+
 // web3 configuration
 app.web3 = config.web3;
 
@@ -60,7 +61,8 @@ app.use(
     extended: true
   })
 );
-
+app.use(morgan('dev'));
+app.use(errorHandler());
 require('./app/routes/api')(app);
 
 // Start server

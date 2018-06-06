@@ -19,13 +19,18 @@ module.exports = function(app) {
   /* Web3 Initialization */
   //var web3 = new Web3(new Web3.providers.IpcProvider(app.web3.ipc.provider, client));
   var web3 = new Web3(new Web3.providers.HttpProvider(app.web3.rpc.provider));
-  console.log('app.web3.rpc.provider', app.web3.rpc.provider);
+
   /* Contract Initialization */
   var contractObj = new web3.eth.Contract(
     app.contract.abi,
     app.contract.address
   );
   contractObj.options.from = app.contract.owner_address;
+
+  // added for health check
+  app.get('/', function(req, res) {
+    return res.sendStatus(200);
+  });
 
   /* Turn on system flag */
   app.post('/system', function(req, res) {
