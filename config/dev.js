@@ -19,7 +19,7 @@ module.exports = {
       provider: '/Projects/adbank-token-network-production/devnet/geth.ipc' // Network IPC Provider
     },
     rpc: {
-      provider: 'http://localhost:8545/'
+      provider: 'localhost:8545'
     }
   },
   contract: {

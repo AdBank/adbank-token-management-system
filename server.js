@@ -3,7 +3,7 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var express = require('express');
 var morgan = require('morgan');
-
+var http = require('http');
 // Configs
 var config = require('./config/' + (process.env.NODE_ENV || 'dev') + '.js');
 
@@ -22,7 +22,7 @@ mongoose.connect(uri);
 
 // Initialize the Express App
 var app = express();
-
+var server = http.createServer(app);
 app.use(morgan('tiny'));
 // web3 configuration
 app.web3 = config.web3;
@@ -63,11 +63,16 @@ app.use(
 
 require('./app/routes/api')(app);
 
-// Start the app with listen and a port number
-app.listen(config.port, config.ip, () => {
-  console.log(
-    `[Express] ${config.name} server listening on ${config.port}, in ${app.get(
-      'env'
-    )} mode`
-  );
-});
+// Start server
+function startServer() {
+  // Start the app with listen and a port number
+  app.tms = server.listen(config.port, config.ip, () => {
+    console.log(
+      `[Express] ${config.name} server listening on ${
+        config.port
+      }, in ${app.get('env')} mode`
+    );
+  });
+}
+
+setImmediate(startServer);
