@@ -370,6 +370,7 @@ module.exports = function(app) {
               resolve(temp);
             } else {
               console.log(err);
+              reject(err);
             }
           }
         );
@@ -390,7 +391,10 @@ module.exports = function(app) {
           return Promise.resolve();
         }
       })
-      .catch(err => res.status(400).send({ status: false, msg: err }));
+      .catch(err => {
+        console.log('handleNextWalletDB err', err);
+        Promise.reject(err);
+      });
   }
 
   function handleWalletDB(items) {
@@ -398,7 +402,10 @@ module.exports = function(app) {
       .then(() => {
         return Promise.resolve();
       })
-      .catch(err => res.status(400).send({ status: false, msg: err }));
+      .catch(err => {
+        console.log('handleWalletDB err', err);
+        Promise.reject(err);
+      });
   }
 
   /* Create multiple internal wallets for users */
@@ -727,7 +734,10 @@ module.exports = function(app) {
           .then(function(receipt) {
             resolve();
           })
-          .catch(err => res.status(400).send({ status: false, msg: err }));
+          .catch(err => {
+            console.log('error', error);
+            Promise.reject(err);
+          });
       }
     });
   }
