@@ -735,7 +735,7 @@ module.exports = function(app) {
             resolve();
           })
           .catch(err => {
-            console.log('error', error);
+            console.log('error', err);
             Promise.reject(err);
           });
       }
