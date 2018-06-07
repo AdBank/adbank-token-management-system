@@ -33,9 +33,6 @@ module.exports = {
     address:
       process.env.CONTRACT_ADDRESS ||
       '0xb33493741ebb166a29ed471746e03dd113074722', // Address where contract is deployed
-    privateKey:
-      process.env.CONTRACT_PK ||
-      'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307', // Contract owner private key
     decimals: process.env.CONTRACT_DEC || 18 // Token decimals
   },
   networkWallet: {
@@ -50,10 +47,7 @@ module.exports = {
   revenueWallet: {
     address:
       process.env.REV_WALLET_ADDRESS ||
-      '0xf3399d84571fac96eed37cd4b50baee807b67360',
-    privateKey:
-      process.env.REV_WALLET_PK ||
-      'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307'
+      '0xf3399d84571fac96eed37cd4b50baee807b67360'
   },
   chainId: process.env.CHAIN_ID || 3, // Network Chain ID,
   key: process.env.KEY || '&6831IlYmK33d', // Security Key

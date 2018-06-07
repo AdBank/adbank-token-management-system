@@ -12,8 +12,6 @@ server.js loads settings for the app
 		Adbank smart contract ABI file. You can get it easily after compilation. ( Try to get it in Remix )
 	- owner address
 		Your eth address where you want to deploy smart contract
-	- password
-		Your eth address password ( This is used to unlock your address to send tokens )
 	- address
 		You deploy smart contract on your eth address. Then you get smart contract mined address.
 		This is used to create smart contract object in node.
@@ -25,14 +23,12 @@ server.js loads settings for the app
 		When we create internal wallet, we send 0.01 ETH to the created internal wallet from network wallet.
 		That's because transactions can be made between two created internal wallets.
 		Currently, in my test configration, it is set as the one same as contract owner address.
-	- password
-		Your network wallet password
+	- privateKey
+		Your network wallet privateKey
 * revenueWallet ( Fee holder )
 	- address
 		Your revenue wallet address
 		When transaction is happening from advertiser to publisher, fee is sent to the fee holder.
-	- password
-		Your revenue wallet password *(No need to have the password because it is just to send token in this wallet)*
 
 --- Platform Explanation ---
 
@@ -79,14 +75,6 @@ You can check/change the right value in config/dev.js. This is used for security
 		And then, it creates internal wallet automatically and transfers 0.01 ETH from master ETH wallet to the newly created internal wallet.
 		This transferred ETH will be used for transactions between internal wallets.
 		If successful, it returns only success message and wallet Id which is unique.
-
-*  /transferTokens
-	Parameters:
-		walletId: string value which is unique
-		tokenAmount: float value
-
-	Description:
-		This endpoint is to transfer tokens from contract owner to the user.
 
 *	/withdraw
 	Parameters:

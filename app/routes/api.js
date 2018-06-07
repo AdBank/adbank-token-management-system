@@ -17,7 +17,6 @@ module.exports = function(app) {
   var client = new net.Socket();
 
   /* Web3 Initialization */
-  //var web3 = new Web3(new Web3.providers.IpcProvider(app.web3.ipc.provider, client));
   var web3 = new Web3(new Web3.providers.HttpProvider(app.web3.rpc.provider));
 
   /* Contract Initialization */
@@ -179,102 +178,6 @@ module.exports = function(app) {
         });
       }
     );
-  });
-
-  /* Transfer tokens from contract to internal wallet */
-  app.post('/transferTokens', async function(req, res) {
-    /* Auth Begin */
-    var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
-    /* Auth End */
-
-    if (
-      !req.body.walletId ||
-      !req.body.tokenAmount ||
-      isNaN(req.body.tokenAmount)
-    )
-      return res.send({ status: false, msg: 'Parameters are missing!' });
-
-    var walletId = req.body.walletId;
-    if (!walletId.match(/^[0-9a-fA-F]{24}$/))
-      return res.send({ status: false, msg: 'Invalid wallet id!' });
-
-    var wallet = await Wallet.findOne({ _id: walletId });
-
-    if (!wallet)
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
-
-    /* Transfer tokens using private key */
-    var tokenAmount = new BigNumber(
-      (req.body.tokenAmount * Math.pow(10, app.contract.decimals)).toString()
-    );
-    var gasPrice = await web3.eth.getGasPrice();
-
-    var privateKeyStr = stripHexPrefix(app.contract.privateKey);
-    var privateKey = new Buffer(privateKeyStr, 'hex');
-
-    var txData = contractObj.methods
-      .transfer(wallet.address, tokenAmount)
-      .encodeABI();
-
-    var nonce = await web3.eth
-      .getTransactionCount(app.contract.owner_address)
-      .catch(error => {
-        return res.send({
-          status: false,
-          msg: 'Error occurred in getting transaction count!'
-        });
-      });
-
-    var txParams = {
-      nonce: web3.utils.toHex(nonce),
-      gasPrice: web3.utils.toHex(gasPrice),
-      gasLimit: web3.utils.toHex(400000),
-      from: app.contract.owner_address,
-      to: contractObj._address,
-      value: '0x00',
-      chainId: app.chainId,
-      data: txData
-    };
-
-    var tx = new Tx(txParams);
-    tx.sign(privateKey);
-
-    var serializedTx = tx.serialize();
-
-    var sent = false;
-    web3.eth
-      .sendSignedTransaction('0x' + serializedTx.toString('hex'))
-      .on('transactionHash', function(hash) {
-        History.create(
-          {
-            from: app.contract.owner_address,
-            to: wallet._id,
-            amount: tokenAmount,
-            hash: hash,
-            action: 'import'
-          },
-          async function(err, history) {
-            sent = true;
-
-            if (err)
-              return res.send({
-                status: false,
-                msg: 'Error occurred in saving history!'
-              });
-
-            return res.send({
-              status: true,
-              hash: hash,
-              balance: req.body.tokenAmount
-            });
-          }
-        );
-      })
-      .on('error', function(err) {
-        if (!sent) return res.send({ status: false, msg: err.message });
-      });
-    /* Transfer tokens using private key end */
   });
 
   /* Withdraw to external public wallet */

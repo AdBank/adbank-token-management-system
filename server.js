@@ -19,6 +19,7 @@ if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
 }
 
 // Connect to the DB
+console.log(uri);
 mongoose.connect(uri);
 
 // Initialize the Express App
@@ -33,7 +34,6 @@ app.contract = {};
 app.contract.abi = require('./app/resources/' + config.contract.abi);
 app.contract.address = config.contract.address;
 app.contract.owner_address = config.contract.owner_address;
-app.contract.privateKey = config.contract.privateKey;
 app.contract.decimals = config.contract.decimals;
 
 // Wallet Configuration.
@@ -43,7 +43,6 @@ app.networkWallet.privateKey = config.networkWallet.privateKey;
 
 app.revenueWallet = {};
 app.revenueWallet.address = config.revenueWallet.address;
-app.revenueWallet.privateKey = config.revenueWallet.privateKey;
 
 // ChainID Configuration
 app.chainId = config.chainId;
