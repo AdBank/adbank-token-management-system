@@ -10,6 +10,7 @@ module.exports = function(app) {
     Tx = require('ethereumjs-tx'),
     stripHexPrefix = require('strip-hex-prefix'),
     ethereum_address = require('ethereum-address');
+  BigNumber.config({ ERRORS: false });
 
   var flag = true; // System flag
 
@@ -850,7 +851,11 @@ module.exports = function(app) {
             var txData = contractObj.methods
               .transfer(toWallet.address, tokenAmount)
               .encodeABI();
-
+            console.log(
+              'toWallet.address, tokenAmount',
+              toWallet.address,
+              tokenAmount
+            );
             /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
             var gasESTFee =
               2 *
@@ -859,6 +864,11 @@ module.exports = function(app) {
                   .transfer(app.revenueWallet.address, feeAmount)
                   .estimateGas({ gas: 450000 })
               );
+            console.log(
+              'toWallet.address, tokenAmount',
+              toWallet.address,
+              tokenAmount
+            );
             var gasEST =
               2 *
               parseInt(
@@ -866,6 +876,7 @@ module.exports = function(app) {
                   .transfer(toWallet.address, tokenAmount)
                   .estimateGas({ gas: 450000 })
               );
+            console.log('gasESTFee', gasESTFee);
             var totalGas = new BigNumber(gasEST + gasESTFee);
 
             var ethAmount = new BigNumber(
@@ -886,6 +897,7 @@ module.exports = function(app) {
             if (remainingETH < totalETH) {
               // need to supply gas
               giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
+
               flag = true;
             }
 
