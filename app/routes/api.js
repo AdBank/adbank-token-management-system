@@ -1,15 +1,15 @@
 module.exports = function(app) {
-  var mongoose = require('mongoose'),
-    bcrypt = require('bcrypt'),
-    Web3 = require('web3'),
-    Cryptr = require('cryptr'),
-    Wallet = require('../models/wallet'),
-    History = require('../models/history'),
-    BigNumber = require('bignumber.js'),
-    net = require('net'),
-    Tx = require('ethereumjs-tx'),
-    stripHexPrefix = require('strip-hex-prefix'),
-    ethereum_address = require('ethereum-address');
+  // const mongoose = require('mongoose');
+  // const bcrypt = require('bcrypt');
+  const Web3 = require('web3');
+  const Cryptr = require('cryptr');
+  const Wallet = require('../models/wallet');
+  const History = require('../models/history');
+  const BigNumber = require('bignumber.js');
+  const net = require('net');
+  const Tx = require('ethereumjs-tx');
+  const stripHexPrefix = require('strip-hex-prefix');
+  const ethereum_address = require('ethereum-address');
   BigNumber.config({ ERRORS: false });
 
   var flag = true; // System flag
@@ -123,10 +123,10 @@ module.exports = function(app) {
     contractObj.methods
       .balanceOf(wallet.address)
       .call({ from: app.contract.owner_address })
-      .then(function(result) {
+      .then(result => {
         var balance = result / Math.pow(10, app.contract.decimals);
 
-        return res.send({ status: true, balance: balance });
+        return res.status(200).send({ status: true, balance: balance });
       })
       .catch(err => res.status(400).send({ status: false, msg: err }));
   });
@@ -691,7 +691,7 @@ module.exports = function(app) {
                         action: 'spent'
                       })
                         .then(result => {
-                          console.log('History create result', eresultrr);
+                          console.log('History create result', result);
                         })
                         .catch(err => {
                           console.log('err', err);
