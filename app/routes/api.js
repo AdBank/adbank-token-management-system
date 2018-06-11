@@ -1,15 +1,16 @@
 module.exports = function(app) {
-  var mongoose = require('mongoose'),
-    bcrypt = require('bcrypt'),
-    Web3 = require('web3'),
-    Cryptr = require('cryptr'),
-    Wallet = require('../models/wallet'),
-    History = require('../models/history'),
-    BigNumber = require('bignumber.js'),
-    net = require('net'),
-    Tx = require('ethereumjs-tx'),
-    stripHexPrefix = require('strip-hex-prefix'),
-    ethereum_address = require('ethereum-address');
+  // const mongoose = require('mongoose');
+  // const bcrypt = require('bcrypt');
+  const Web3 = require('web3');
+  const Cryptr = require('cryptr');
+  const Wallet = require('../models/wallet');
+  const History = require('../models/history');
+  const BigNumber = require('bignumber.js');
+  const net = require('net');
+  const Tx = require('ethereumjs-tx');
+  const stripHexPrefix = require('strip-hex-prefix');
+  const ethereum_address = require('ethereum-address');
+  BigNumber.config({ ERRORS: false });
 
   var flag = true; // System flag
 
@@ -122,10 +123,10 @@ module.exports = function(app) {
     contractObj.methods
       .balanceOf(wallet.address)
       .call({ from: app.contract.owner_address })
-      .then(function(result) {
+      .then(result => {
         var balance = result / Math.pow(10, app.contract.decimals);
 
-        return res.send({ status: true, balance: balance });
+        return res.status(200).send({ status: true, balance: balance });
       })
       .catch(err => res.status(400).send({ status: false, msg: err }));
   });
@@ -302,9 +303,8 @@ module.exports = function(app) {
             var sent = false;
             web3.eth
               .sendSignedTransaction('0x' + serializedTx.toString('hex'))
-              .on('transactionHash', function(hash) {
+              .on('transactionHash', hash => {
                 balance = parseFloat(balance) - parseFloat(amount);
-
                 History.create(
                   {
                     from: wallet._id,
@@ -330,11 +330,16 @@ module.exports = function(app) {
                   }
                 );
               })
-              .on('error', function(err) {
+              .on('receipt', receipt => {
+                // we should persist these to keep a papertrail.
+                console.log('withdraw receipt', receipt);
+              })
+              .on('error', err => {
+                console.log('withdraw err', err);
                 if (!sent) return res.send({ status: false, msg: err.message });
               });
           },
-          function(err) {
+          err => {
             return res.send({ status: false, msg: err.message });
           }
         );
@@ -444,28 +449,36 @@ module.exports = function(app) {
   /* Badge Request */
   app.post('/batchRequest', async function(req, res) {
     if (!req.body.fromWalletId)
-      return res.send({ status: false, msg: 'Parameters are missing!' });
+      return res
+        .status(400)
+        .send({ status: false, msg: 'Parameters are missing!' });
 
     var items = [];
 
     try {
       items = JSON.parse(req.body.items);
     } catch (e) {
-      return res.send({ status: false, msg: 'Invalid parameters!' });
+      return res
+        .status(400)
+        .send({ status: false, msg: 'Invalid parameters!' });
     }
 
     if (!items || items.length == 0)
-      return res.send({ status: false, msg: 'Parameters are missing!' });
+      return res
+        .status(400)
+        .send({ status: false, msg: 'Parameters are missing!' });
 
     /* ID Check */
     var fromWalletId = req.body.fromWalletId;
     if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/))
-      return res.send({ status: false, msg: 'Invalid wallet id!' });
+      return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
     /* ID Check End */
 
     var fromWallet = await Wallet.findOne({ _id: fromWalletId });
     if (!fromWallet)
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
+      return res
+        .status(400)
+        .send({ status: false, msg: "Wallet doesn't exist!" });
 
     /* Check Balance */
     contractObj.methods
@@ -478,7 +491,7 @@ module.exports = function(app) {
         var nonce = await web3.eth
           .getTransactionCount(fromWallet.address)
           .catch(error => {
-            return res.send({
+            return res.status(400).send({
               status: false,
               msg: 'Error occurred in getting transaction count!'
             });
@@ -529,7 +542,9 @@ module.exports = function(app) {
         } /* End For */
 
         if (newItems.length == 0)
-          return res.send({ status: false, msg: 'Nothing to process!' });
+          return res
+            .status(400)
+            .send({ status: false, msg: 'Nothing to process!' });
 
         /* Supply Gas */
         var totalGas = new BigNumber(0);
@@ -628,8 +643,16 @@ module.exports = function(app) {
 
                 web3.eth
                   .sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
-                  .on('transactionHash', function(hash) {})
-                  .on('error', function(err) {});
+                  .on('transactionHash', hash => {
+                    console.log('batchRequest item transactionHash', hash);
+                  })
+                  .on('receipt', receipt => {
+                    // we should persist these to keep a papertrail.
+                    console.log('batchRequest item receipt', receipt);
+                  })
+                  .on('error', err => {
+                    console.log('batchRequest item err', err);
+                  });
                 /* Send Fee End */
 
                 var txParams = {
@@ -660,18 +683,19 @@ module.exports = function(app) {
                       newItems[processed - 1].status = 'processed';
                       newItems[processed - 1].hash = hash;
 
-                      History.create(
-                        {
-                          from: fromWallet._id,
-                          to: newItems[processed - 1].toWallet._id,
-                          amount: newItems[processed - 1].tokenAmount,
-                          hash: hash,
-                          action: 'spent'
-                        },
-                        function(err, history) {
-                          //console.log(history);
-                        }
-                      );
+                      History.create({
+                        from: fromWallet._id,
+                        to: newItems[processed - 1].toWallet._id,
+                        amount: newItems[processed - 1].tokenAmount,
+                        hash: hash,
+                        action: 'spent'
+                      })
+                        .then(result => {
+                          console.log('History create result', result);
+                        })
+                        .catch(err => {
+                          console.log('err', err);
+                        });
                     }
 
                     if (processed == newItems.length)
@@ -689,13 +713,20 @@ module.exports = function(app) {
               batch.execute();
             },
             function(err) {
-              return res.send({ status: false, msg: err.message });
+              conosole.log('err', err);
+              return res.status(400).send({ status: false, msg: err.message });
             }
           )
-          .catch(err => res.status(400).send({ status: false, msg: err }));
+          .catch(err => {
+            conosole.log('err', err);
+            res.status(400).send({ status: false, msg: err });
+          });
         /* Promise End */
       })
-      .catch(err => res.status(400).send({ status: false, msg: err }));
+      .catch(err => {
+        conosole.log('err', err);
+        res.status(400).send({ status: false, msg: err });
+      });
     /* Check Balance End */
   });
 
@@ -748,60 +779,82 @@ module.exports = function(app) {
     var msg = checkAuth(req);
     if (msg != '') return res.send({ status: false, msg: msg });
     /* Auth End */
-
+    //console.log('req.body', req.body);
     if (
       !req.body.fromWalletId ||
       !req.body.toWalletId ||
       !req.body.tokenAmount ||
       isNaN(req.body.tokenAmount)
-    )
+    ) {
       return res.send({ status: false, msg: 'Incorrect parameters!' });
+    }
 
     /* ID Check */
     var fromWalletId = req.body.fromWalletId;
+    // validate fromWalletId is 12-byte ObjectId value
     if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/))
       return res.send({ status: false, msg: 'Invalid wallet id!' });
     /* ID Check End */
 
     var fromWallet = await Wallet.findOne({ _id: fromWalletId });
-    if (!fromWallet)
+    if (!fromWallet) {
       return res.send({ status: false, msg: "Wallet doesn't exist!" });
+    }
 
     /* ID Check */
     var toWalletId = req.body.toWalletId;
-    if (!toWalletId.match(/^[0-9a-fA-F]{24}$/))
+    // validate toWalletId is 12-byte ObjectId value
+    if (!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
       return res.send({ status: false, msg: 'Invalid wallet id!' });
+    }
     /* ID Check End */
 
+    // find toWalletId in tms db
     var toWallet = await Wallet.findOne({ _id: toWalletId });
-    if (!toWallet)
+    if (!toWallet) {
       return res.send({ status: false, msg: "Wallet doesn't exist!" });
-
+    }
+    // set the amount to be transfered as a floating point number
     var amount = parseFloat(req.body.tokenAmount);
+
+    // verify the amount is greater that 0
     if (amount == 0)
       return res.send({
         status: false,
         msg: "Token amount shouldn't be equal to 0!"
       });
 
+    // set floating point number to 2 decimal places
     amount = parseFloat(amount.toFixed(2));
+    // calculate fee based
     var fee = parseFloat((amount * app.percent) / 100); // Fee to Revenue Wallet
+    // trim fee to two decimal places
     fee = parseFloat(fee.toFixed(2));
-
+    //calculate total amount to be transfered
     var totalAmount = parseFloat(amount) + parseFloat(fee);
 
-    /* Check Balance */
+    // Check balance of fromWallet account
     contractObj.methods
       .balanceOf(fromWallet.address)
       .call({ from: app.contract.owner_address })
-      .then(async function(result) {
+      .then(async result => {
+        // console.log('result', result);
         var balance = result / Math.pow(10, app.contract.decimals);
-
-        if (balance == 0)
-          return res.send({ status: false, msg: 'Nothing to transfer!' });
-
-        if (totalAmount > balance)
-          return res.send({ status: false, msg: 'Insufficient balance!' });
+        // check if balance is 0
+        // console.log('balance', balance);
+        if (balance === 0) {
+          console.log('err', 'Nothing to transfer!');
+          return res
+            .status(400)
+            .send({ status: false, msg: 'Nothing to transfer!' });
+        }
+        // check if totalAmount is greater than balance and reject if true
+        if (totalAmount > balance) {
+          console.log('err', 'Insufficient balance!');
+          return res
+            .status(400)
+            .send({ status: false, msg: 'Insufficient balance!' });
+        }
 
         contractObj.methods
           .balanceOf(toWallet.address)
@@ -828,7 +881,11 @@ module.exports = function(app) {
             var txData = contractObj.methods
               .transfer(toWallet.address, tokenAmount)
               .encodeABI();
-
+            console.log(
+              'toWallet.address, tokenAmount',
+              toWallet.address,
+              tokenAmount
+            );
             /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
             var gasESTFee =
               2 *
@@ -837,6 +894,11 @@ module.exports = function(app) {
                   .transfer(app.revenueWallet.address, feeAmount)
                   .estimateGas({ gas: 450000 })
               );
+            console.log(
+              'toWallet.address, tokenAmount',
+              toWallet.address,
+              tokenAmount
+            );
             var gasEST =
               2 *
               parseInt(
@@ -844,6 +906,7 @@ module.exports = function(app) {
                   .transfer(toWallet.address, tokenAmount)
                   .estimateGas({ gas: 450000 })
               );
+            console.log('gasESTFee', gasESTFee);
             var totalGas = new BigNumber(gasEST + gasESTFee);
 
             var ethAmount = new BigNumber(
@@ -853,8 +916,8 @@ module.exports = function(app) {
 
             console.log('gasPrice - ' + gasPrice);
 
-            var remainingGas = new BigNumber(ethAmount / gasPrice);
-
+            var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
+            // console.log('remainingGas - ' + remainingGas);
             var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
             var totalETH = parseFloat(totalGas / Math.pow(10, 9));
 
@@ -864,6 +927,7 @@ module.exports = function(app) {
             if (remainingETH < totalETH) {
               // need to supply gas
               giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
+
               flag = true;
             }
 
@@ -901,8 +965,15 @@ module.exports = function(app) {
 
                 web3.eth
                   .sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
-                  .on('transactionHash', function(hash) {})
-                  .on('error', function(err) {});
+                  .on('transactionHash', hash => {
+                    console.log('transactionHash', hash);
+                  })
+                  .on('recipet', recipet => {
+                    console.log('recipet', recipet);
+                  })
+                  .on('error', err => {
+                    console.log('sendSignedTransaction err', err);
+                  });
                 /* Send Fee End */
 
                 var txParams = {
@@ -929,45 +1000,59 @@ module.exports = function(app) {
                       parseFloat(balance) - parseFloat(totalAmount);
                     toBalance = parseFloat(toBalance) + parseFloat(amount);
 
-                    History.create(
-                      {
-                        from: fromWallet._id,
-                        to: toWallet._id,
-                        amount: tokenAmount,
-                        hash: hash,
-                        action: 'spent'
-                      },
-                      async function(err, history) {
-                        sent = true;
-                        if (err)
-                          return res.send({
-                            status: false,
-                            msg: 'Error occurred in saving history!'
-                          });
-
-                        return res.send({
+                    History.create({
+                      from: fromWallet._id,
+                      to: toWallet._id,
+                      amount: tokenAmount,
+                      hash: hash,
+                      action: 'spent'
+                    })
+                      .then(result => {
+                        return res.status(201).send({
                           status: true,
                           hash: hash,
                           fromBalance: fromBalance,
                           toBalance: toBalance
                         });
-                      }
-                    );
+                      })
+                      .catch(err => {
+                        console.log('err', err);
+                        return res.status(400).send({
+                          status: false,
+                          msg: 'Error occurred in saving history!'
+                        });
+                      });
                   })
-                  .on('error', function(err) {
-                    if (!sent)
-                      return res.send({ status: false, msg: err.message });
+                  .on('receipt', receipt => {
+                    // we should persist these to keep a papertrail.
+                    console.log('receipt', receipt);
+                  })
+                  .on('error', err => {
+                    if (!sent) console.log('err', err);
+                    console.log('err', err);
+                    return res
+                      .status(400)
+                      .send({ status: false, msg: err.message });
                   });
               },
               function(err) {
-                return res.send({ status: false, msg: err.message });
+                console.log('err', err);
+                return res
+                  .status(400)
+                  .send({ status: false, msg: err.message });
               }
             );
             /* Promise End */
           })
-          .catch(err => res.status(400).send({ status: false, msg: err }));
+          .catch(err => {
+            console.log('err', err);
+            res.status(400).send({ status: false, msg: err });
+          });
       })
-      .catch(err => res.status(400).send({ status: false, msg: err }));
+      .catch(err => {
+        console.log('err', err);
+        res.status(400).send({ status: false, msg: err });
+      });
     /* Check Balance End */
   });
 
