@@ -303,9 +303,8 @@ module.exports = function(app) {
             var sent = false;
             web3.eth
               .sendSignedTransaction('0x' + serializedTx.toString('hex'))
-              .on('transactionHash', function(hash) {
+              .on('transactionHash', hash => {
                 balance = parseFloat(balance) - parseFloat(amount);
-
                 History.create(
                   {
                     from: wallet._id,
@@ -331,11 +330,16 @@ module.exports = function(app) {
                   }
                 );
               })
-              .on('error', function(err) {
+              .on('receipt', receipt => {
+                // we should persist these to keep a papertrail.
+                console.log('withdraw receipt', receipt);
+              })
+              .on('error', err => {
+                console.log('withdraw err', err);
                 if (!sent) return res.send({ status: false, msg: err.message });
               });
           },
-          function(err) {
+          err => {
             return res.send({ status: false, msg: err.message });
           }
         );
@@ -445,28 +449,36 @@ module.exports = function(app) {
   /* Badge Request */
   app.post('/batchRequest', async function(req, res) {
     if (!req.body.fromWalletId)
-      return res.send({ status: false, msg: 'Parameters are missing!' });
+      return res
+        .status(400)
+        .send({ status: false, msg: 'Parameters are missing!' });
 
     var items = [];
 
     try {
       items = JSON.parse(req.body.items);
     } catch (e) {
-      return res.send({ status: false, msg: 'Invalid parameters!' });
+      return res
+        .status(400)
+        .send({ status: false, msg: 'Invalid parameters!' });
     }
 
     if (!items || items.length == 0)
-      return res.send({ status: false, msg: 'Parameters are missing!' });
+      return res
+        .status(400)
+        .send({ status: false, msg: 'Parameters are missing!' });
 
     /* ID Check */
     var fromWalletId = req.body.fromWalletId;
     if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/))
-      return res.send({ status: false, msg: 'Invalid wallet id!' });
+      return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
     /* ID Check End */
 
     var fromWallet = await Wallet.findOne({ _id: fromWalletId });
     if (!fromWallet)
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
+      return res
+        .status(400)
+        .send({ status: false, msg: "Wallet doesn't exist!" });
 
     /* Check Balance */
     contractObj.methods
@@ -479,7 +491,7 @@ module.exports = function(app) {
         var nonce = await web3.eth
           .getTransactionCount(fromWallet.address)
           .catch(error => {
-            return res.send({
+            return res.status(400).send({
               status: false,
               msg: 'Error occurred in getting transaction count!'
             });
@@ -530,7 +542,9 @@ module.exports = function(app) {
         } /* End For */
 
         if (newItems.length == 0)
-          return res.send({ status: false, msg: 'Nothing to process!' });
+          return res
+            .status(400)
+            .send({ status: false, msg: 'Nothing to process!' });
 
         /* Supply Gas */
         var totalGas = new BigNumber(0);
@@ -629,8 +643,16 @@ module.exports = function(app) {
 
                 web3.eth
                   .sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
-                  .on('transactionHash', function(hash) {})
-                  .on('error', function(err) {});
+                  .on('transactionHash', hash => {
+                    console.log('batchRequest item transactionHash', hash);
+                  })
+                  .on('receipt', receipt => {
+                    // we should persist these to keep a papertrail.
+                    console.log('batchRequest item receipt', receipt);
+                  })
+                  .on('error', err => {
+                    console.log('batchRequest item err', err);
+                  });
                 /* Send Fee End */
 
                 var txParams = {
@@ -661,18 +683,19 @@ module.exports = function(app) {
                       newItems[processed - 1].status = 'processed';
                       newItems[processed - 1].hash = hash;
 
-                      History.create(
-                        {
-                          from: fromWallet._id,
-                          to: newItems[processed - 1].toWallet._id,
-                          amount: newItems[processed - 1].tokenAmount,
-                          hash: hash,
-                          action: 'spent'
-                        },
-                        function(err, history) {
-                          //console.log(history);
-                        }
-                      );
+                      History.create({
+                        from: fromWallet._id,
+                        to: newItems[processed - 1].toWallet._id,
+                        amount: newItems[processed - 1].tokenAmount,
+                        hash: hash,
+                        action: 'spent'
+                      })
+                        .then(result => {
+                          console.log('History create result', eresultrr);
+                        })
+                        .catch(err => {
+                          console.log('err', err);
+                        });
                     }
 
                     if (processed == newItems.length)
@@ -690,13 +713,20 @@ module.exports = function(app) {
               batch.execute();
             },
             function(err) {
-              return res.send({ status: false, msg: err.message });
+              conosole.log('err', err);
+              return res.status(400).send({ status: false, msg: err.message });
             }
           )
-          .catch(err => res.status(400).send({ status: false, msg: err }));
+          .catch(err => {
+            conosole.log('err', err);
+            res.status(400).send({ status: false, msg: err });
+          });
         /* Promise End */
       })
-      .catch(err => res.status(400).send({ status: false, msg: err }));
+      .catch(err => {
+        conosole.log('err', err);
+        res.status(400).send({ status: false, msg: err });
+      });
     /* Check Balance End */
   });
 
@@ -935,8 +965,13 @@ module.exports = function(app) {
 
                 web3.eth
                   .sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
-                  .on('transactionHash', function(hash) {})
-                  .on('error', function(err) {
+                  .on('transactionHash', hash => {
+                    console.log('transactionHash', hash);
+                  })
+                  .on('recipet', recipet => {
+                    console.log('recipet', recipet);
+                  })
+                  .on('error', err => {
                     console.log('sendSignedTransaction err', err);
                   });
                 /* Send Fee End */
@@ -965,30 +1000,28 @@ module.exports = function(app) {
                       parseFloat(balance) - parseFloat(totalAmount);
                     toBalance = parseFloat(toBalance) + parseFloat(amount);
 
-                    History.create(
-                      {
-                        from: fromWallet._id,
-                        to: toWallet._id,
-                        amount: tokenAmount,
-                        hash: hash,
-                        action: 'spent'
-                      },
-                      async function(err, history) {
-                        sent = true;
-                        if (err)
-                          return res.send({
-                            status: false,
-                            msg: 'Error occurred in saving history!'
-                          });
-
-                        return res.send({
+                    History.create({
+                      from: fromWallet._id,
+                      to: toWallet._id,
+                      amount: tokenAmount,
+                      hash: hash,
+                      action: 'spent'
+                    })
+                      .then(result => {
+                        return res.status(201).send({
                           status: true,
                           hash: hash,
                           fromBalance: fromBalance,
                           toBalance: toBalance
                         });
-                      }
-                    );
+                      })
+                      .catch(err => {
+                        console.log('err', err);
+                        return res.status(400).send({
+                          status: false,
+                          msg: 'Error occurred in saving history!'
+                        });
+                      });
                   })
                   .on('receipt', receipt => {
                     // we should persist these to keep a papertrail.
