@@ -296,10 +296,12 @@ module.exports = function(app) {
             /* Withdraw Tokens */
             var nonce = await web3.eth
               .getTransactionCount(wallet.address)
-              .catch(error => res.send({
-                status: false,
-                msg: 'Error occurred in getting transaction count!'
-              }));
+              .catch(error =>
+                res.send({
+                  status: false,
+                  msg: 'Error occurred in getting transaction count!'
+                })
+              );
 
             var txParams = {
               nonce: web3.utils.toHex(nonce),
@@ -511,10 +513,12 @@ module.exports = function(app) {
 
         var nonce = await web3.eth
           .getTransactionCount(fromWallet.address)
-          .catch(error => res.status(400).send({
-            status: false,
-            msg: 'Error occurred in getting transaction count!'
-          }));
+          .catch(error =>
+            res.status(400).send({
+              status: false,
+              msg: 'Error occurred in getting transaction count!'
+            })
+          );
 
         var privateKeyStr = stripHexPrefix(
           cryptr.decrypt(fromWallet.privateKey)
@@ -529,9 +533,8 @@ module.exports = function(app) {
 
         for(var i in items) {
           /* Begin For */
-          if(items[i].action != 'spent')
+          if(items[i].action != 'spent') {
             // If it is import or export
-            {
             continue;
           }
 
@@ -800,7 +803,7 @@ module.exports = function(app) {
   app.post('/transferTokensInternally', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if(msg != '') return res.send({ status: false, msg });
+    if(msg != '') return res.status(401);
     /* Auth End */
     //console.log('req.body', req.body);
     if(
@@ -964,10 +967,12 @@ module.exports = function(app) {
               async function(result) {
                 var nonce = await web3.eth
                   .getTransactionCount(fromWallet.address)
-                  .catch(error => res.send({
-                    status: false,
-                    msg: 'Error occurred in getting transaction count!'
-                  }));
+                  .catch(error =>
+                    res.send({
+                      status: false,
+                      msg: 'Error occurred in getting transaction count!'
+                    })
+                  );
 
                 /* Send Fee */
                 var txParamsFee = {
@@ -1030,12 +1035,14 @@ module.exports = function(app) {
                       hash,
                       action: 'spent'
                     })
-                      .then(result => res.status(201).send({
-                        status: true,
-                        hash,
-                        fromBalance,
-                        toBalance
-                      }))
+                      .then(result =>
+                        res.status(201).send({
+                          status: true,
+                          hash,
+                          fromBalance,
+                          toBalance
+                        })
+                      )
                       .catch(err => {
                         console.log('err', err);
                         return res.status(400).send({

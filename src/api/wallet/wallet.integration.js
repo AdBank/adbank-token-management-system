@@ -31,7 +31,6 @@ describe('Wallet API:', () => {
   before(() =>
     Wallet.remove().then(() => {
       wallet = new Wallet({});
-
       return wallet.save();
     })
   );
@@ -39,10 +38,10 @@ describe('Wallet API:', () => {
   // Clear wallets after testing
   after(() => Wallet.remove());
 
-  describe('POST /api/wallets', () => {
+  describe('POST /api/v1/wallets', () => {
     it('should respond with a wallet profile when authenticated', done => {
       request(app)
-        .post('/wallets')
+        .post('/api/v1/wallets')
         .set('x-api-key', `${config.key}`)
         .send({ userId: '123' })
         .expect(201)
@@ -59,7 +58,7 @@ describe('Wallet API:', () => {
 
     it('should respond with a 401 when not authenticated', done => {
       request(app)
-        .post('/wallets')
+        .post('/api/v1/wallets')
         .set('x-api-key', 'abc123')
         .send({ userId: '123' })
         .expect(401)

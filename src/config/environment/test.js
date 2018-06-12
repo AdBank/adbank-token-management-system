@@ -18,7 +18,7 @@ module.exports = {
     password: process.env.MONGODB_PW || '',
     uri: process.env.MONGODB_URI || 'mongo',
     port: process.env.MONGODB_PORT || 27017,
-    db: process.env.MONGODB_DB || 'adbank-tms-live',
+    db: process.env.MONGODB_DB || 'adbank-tms-test',
     args: process.env.MONGODB_ARGS || ''
   },
   web3: {
