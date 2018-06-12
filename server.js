@@ -6,11 +6,11 @@ var morgan = require('morgan');
 var errorHandler = require('errorhandler');
 var http = require('http');
 // Configs
-var config = require('./config/' + (process.env.NODE_ENV || 'dev') + '.js');
+var config = require(`./config/${process.env.NODE_ENV || 'dev'}.js`);
 
 // set the uri to mongo depending on environment
 let uri = '';
-if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
+if(process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
   uri = `mongodb://${config.mongo.uri}:${config.mongo.port}/${config.mongo.db}`;
 } else {
   uri = `mongodb://${config.mongo.username}:${config.mongo.password}@${
@@ -31,7 +31,7 @@ app.web3 = config.web3;
 
 // Contract Configuration
 app.contract = {};
-app.contract.abi = require('./app/resources/' + config.contract.abi);
+app.contract.abi = require(`./app/resources/${config.contract.abi}`);
 app.contract.address = config.contract.address;
 app.contract.owner_address = config.contract.owner_address;
 app.contract.decimals = config.contract.decimals;

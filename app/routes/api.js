@@ -35,20 +35,23 @@ module.exports = function(app) {
   /* Turn on system flag */
   app.post('/system', function(req, res) {
     var key = '';
-    if (req.headers['x-api-key']) key = req.headers['x-api-key'];
+    if(req.headers['x-api-key']) key = req.headers['x-api-key'];
 
-    if (key != app.key)
+    if(key != app.key) {
       return res.send({ status: false, msg: 'You are not authorised!' });
+    }
 
-    if (!req.body.action)
+    if(!req.body.action) {
       return res.send({ status: false, msg: 'Undefined action!' });
+    }
 
     var action = req.body.action;
 
-    if (action != 'on' && action != 'off')
+    if(action != 'on' && action != 'off') {
       return res.send({ status: false, msg: 'Undefined action!' });
+    }
 
-    if (action == 'on') {
+    if(action == 'on') {
       flag = true;
       return res.send({ status: true, msg: 'System is turned on!' });
     } else {
@@ -61,7 +64,7 @@ module.exports = function(app) {
   app.post('/ownerTokenBalance', function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
     contractObj.methods
@@ -70,7 +73,7 @@ module.exports = function(app) {
       .then(function(result) {
         var balance = result / Math.pow(10, app.contract.decimals);
 
-        return res.send({ status: true, balance: balance });
+        return res.send({ status: true, balance });
       })
       .catch(err => res.status(400).send({ status: false, msg: err }));
   });
@@ -79,16 +82,18 @@ module.exports = function(app) {
   app.post('/holderTokenBalance', function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
-    if (!req.body.address)
+    if(!req.body.address) {
       return res.send({ status: false, msg: 'Address is missing!' });
+    }
 
     var address = req.body.address;
 
-    if (!ethereum_address.isAddress(address))
+    if(!ethereum_address.isAddress(address)) {
       return res.send({ status: false, msg: 'Invalid address!' });
+    }
 
     contractObj.methods
       .balanceOf(address)
@@ -96,7 +101,7 @@ module.exports = function(app) {
       .then(function(result) {
         var balance = result / Math.pow(10, app.contract.decimals);
 
-        return res.send({ status: true, balance: balance });
+        return res.send({ status: true, balance });
       })
       .catch(err => res.status(400).send({ status: false, msg: err }));
   });
@@ -105,20 +110,23 @@ module.exports = function(app) {
   app.post('/walletTokenBalance', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
-    if (!req.body.walletId)
+    if(!req.body.walletId) {
       return res.send({ status: false, msg: 'Wallet ID is missing!' });
+    }
 
     var walletId = req.body.walletId;
-    if (!walletId.match(/^[0-9a-fA-F]{24}$/))
+    if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
       return res.send({ status: false, msg: 'Invalid wallet id!' });
+    }
 
     var wallet = await Wallet.findOne({ _id: walletId });
 
-    if (!wallet)
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
+    if(!wallet) {
+      return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+    }
 
     contractObj.methods
       .balanceOf(wallet.address)
@@ -126,7 +134,7 @@ module.exports = function(app) {
       .then(result => {
         var balance = result / Math.pow(10, app.contract.decimals);
 
-        return res.status(200).send({ status: true, balance: balance });
+        return res.status(200).send({ status: true, balance });
       })
       .catch(err => res.status(400).send({ status: false, msg: err }));
   });
@@ -135,28 +143,31 @@ module.exports = function(app) {
   app.post('/wallet', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
-    if (!req.body.userId)
+    if(!req.body.userId) {
       return res.send({ status: false, msg: 'User is missing!' });
+    }
 
     var wallet = await Wallet.findOne({ userId: req.body.userId });
 
-    if (wallet)
+    if(wallet) {
       return res.send({
         status: false,
         msg: 'Already registered!',
         walletId: wallet._id
       });
+    }
 
     var account = web3.eth.accounts.create(web3.utils.randomHex(32));
 
-    if (!account)
+    if(!account) {
       return res.send({
         status: false,
         msg: 'Error occurred in creating new account!'
       });
+    }
 
     Wallet.create(
       {
@@ -165,11 +176,12 @@ module.exports = function(app) {
         privateKey: cryptr.encrypt(account.privateKey)
       },
       function(err, wallet) {
-        if (err)
+        if(err) {
           return res.send({
             status: false,
             msg: 'Error occurred in creating wallet!'
           });
+        }
 
         return res.send({
           status: true,
@@ -185,32 +197,37 @@ module.exports = function(app) {
   app.post('/withdraw', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
-    if (!req.body.address || !req.body.walletId)
+    if(!req.body.address || !req.body.walletId) {
       return res.send({ status: false, msg: 'Parameters are missing!' });
+    }
 
     var walletId = req.body.walletId;
-    if (!walletId.match(/^[0-9a-fA-F]{24}$/))
+    if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
       return res.send({ status: false, msg: 'Invalid wallet ID!' });
+    }
 
     var wallet = await Wallet.findOne({ _id: walletId });
     var address = req.body.address;
     var amount = 0;
 
-    if (!ethereum_address.isAddress(address))
+    if(!ethereum_address.isAddress(address)) {
       return res.send({ status: false, msg: 'Invalid address!' });
-
-    if (req.body.tokenAmount && !isNaN(req.body.tokenAmount)) {
-      amount = parseFloat(req.body.tokenAmount);
-
-      if (amount == 0)
-        return res.send({ status: false, msg: 'Invalid amount value!' });
     }
 
-    if (!wallet)
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
+    if(req.body.tokenAmount && !isNaN(req.body.tokenAmount)) {
+      amount = parseFloat(req.body.tokenAmount);
+
+      if(amount == 0) {
+        return res.send({ status: false, msg: 'Invalid amount value!' });
+      }
+    }
+
+    if(!wallet) {
+      return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+    }
 
     contractObj.methods
       .balanceOf(wallet.address)
@@ -218,16 +235,18 @@ module.exports = function(app) {
       .then(async function(result) {
         var balance = result / Math.pow(10, app.contract.decimals);
 
-        if (balance == 0)
+        if(balance == 0) {
           return res.send({ status: false, msg: 'Nothing to withdraw!' });
+        }
 
-        if (amount != 0 && amount > balance)
+        if(amount != 0 && amount > balance) {
           return res.send({
             status: false,
             msg: 'Check your balance and withdraw amount!'
           });
+        }
 
-        if (amount == 0) amount = balance;
+        if(amount == 0) amount = balance;
 
         var tokenAmount = new BigNumber(
           (amount * Math.pow(10, app.contract.decimals)).toString()
@@ -248,9 +267,9 @@ module.exports = function(app) {
         var remainingGas = new BigNumber(ethAmount / gasPrice);
 
         /* Estimate gas by doubling. Because sometimes gas is estimated incorrectly and transaction fails. */
-        var totalGasT =
-          2 *
-          parseInt(
+        var totalGasT
+          = 2
+          * parseInt(
             await contractObj.methods
               .transfer(address, tokenAmount)
               .estimateGas({ gas: 450000 })
@@ -263,13 +282,13 @@ module.exports = function(app) {
         var giveETH = 0;
         var flag = false;
 
-        if (remainingETH < totalETH) {
+        if(remainingETH < totalETH) {
           giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
           flag = true;
         }
         /* Supply Gas */
 
-        console.log('giveETH - ' + giveETH);
+        console.log(`giveETH - ${giveETH}`);
 
         /* Promise Start */
         payGasAsETH(wallet.address, giveETH, flag).then(
@@ -277,12 +296,10 @@ module.exports = function(app) {
             /* Withdraw Tokens */
             var nonce = await web3.eth
               .getTransactionCount(wallet.address)
-              .catch(error => {
-                return res.send({
-                  status: false,
-                  msg: 'Error occurred in getting transaction count!'
-                });
-              });
+              .catch(error => res.send({
+                status: false,
+                msg: 'Error occurred in getting transaction count!'
+              }));
 
             var txParams = {
               nonce: web3.utils.toHex(nonce),
@@ -302,7 +319,7 @@ module.exports = function(app) {
 
             var sent = false;
             web3.eth
-              .sendSignedTransaction('0x' + serializedTx.toString('hex'))
+              .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
               .on('transactionHash', hash => {
                 balance = parseFloat(balance) - parseFloat(amount);
                 History.create(
@@ -310,22 +327,23 @@ module.exports = function(app) {
                     from: wallet._id,
                     to: address,
                     amount: tokenAmount,
-                    hash: hash,
+                    hash,
                     action: 'export'
                   },
                   async function(err, history) {
                     sent = true;
 
-                    if (err)
+                    if(err) {
                       return res.send({
                         status: false,
                         msg: 'Error occurred in saving history!'
                       });
+                    }
 
                     return res.send({
                       status: true,
-                      hash: hash,
-                      balance: balance
+                      hash,
+                      balance
                     });
                   }
                 );
@@ -336,12 +354,10 @@ module.exports = function(app) {
               })
               .on('error', err => {
                 console.log('withdraw err', err);
-                if (!sent) return res.send({ status: false, msg: err.message });
+                if(!sent) return res.send({ status: false, msg: err.message });
               });
           },
-          err => {
-            return res.send({ status: false, msg: err.message });
-          }
+          err => res.send({ status: false, msg: err.message })
         );
         /* Promise End */
       })
@@ -353,11 +369,11 @@ module.exports = function(app) {
   function handleWalletByOffset(index, items) {
     return new Promise((resolve, reject) => {
       Wallet.findOne({ userId: items[index].id }, function(err, wallet) {
-        if (wallet || err) resolve(null);
+        if(wallet || err) resolve(null);
 
         var account = web3.eth.accounts.create(web3.utils.randomHex(32));
 
-        if (!account) resolve(null);
+        if(!account) resolve(null);
 
         Wallet.create(
           {
@@ -366,7 +382,7 @@ module.exports = function(app) {
             privateKey: cryptr.encrypt(account.privateKey)
           },
           function(err, wallet) {
-            if (!err && wallet) {
+            if(!err && wallet) {
               var temp = items[index];
               temp.walletId = wallet._id;
               temp.walletAddress = wallet.address;
@@ -386,10 +402,10 @@ module.exports = function(app) {
   function handleNextWalletDB(index, items) {
     return handleWalletByOffset(index, items)
       .then(result => {
-        if (result) importedWallets.push(result);
+        if(result) importedWallets.push(result);
 
         index++;
-        if (index < items.length) {
+        if(index < items.length) {
           return handleNextWalletDB(index, items);
           /* Process Data End */
         } else {
@@ -404,9 +420,7 @@ module.exports = function(app) {
 
   function handleWalletDB(items) {
     return handleNextWalletDB(0, items)
-      .then(() => {
-        return Promise.resolve();
-      })
+      .then(() => Promise.resolve())
       .catch(err => {
         console.log('handleWalletDB err', err);
         Promise.reject(err);
@@ -417,29 +431,32 @@ module.exports = function(app) {
   app.post('/batchWallet', function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
-    if (!req.body.users)
+    if(!req.body.users) {
       return res.send({ status: false, msg: 'Users are missing!' });
+    }
 
     var users = [];
     try {
       users = JSON.parse(req.body.users);
-    } catch (e) {
+    } catch(e) {
       return res.send({ status: false, msg: 'Users are missing!' });
     }
 
-    if (users.length == 0)
+    if(users.length == 0) {
       return res.send({ status: false, msg: 'Users are missing!' });
+    }
 
     handleWalletDB(users)
       .then(() => {
         var newItems = importedWallets;
         importedWallets = [];
 
-        if (newItems.length == 0)
+        if(newItems.length == 0) {
           return res.send({ status: false, msg: 'Nothing to import!' });
+        }
 
         return res.send({ status: true, items: newItems });
       })
@@ -448,37 +465,41 @@ module.exports = function(app) {
 
   /* Badge Request */
   app.post('/batchRequest', async function(req, res) {
-    if (!req.body.fromWalletId)
+    if(!req.body.fromWalletId) {
       return res
         .status(400)
         .send({ status: false, msg: 'Parameters are missing!' });
+    }
 
     var items = [];
 
     try {
       items = JSON.parse(req.body.items);
-    } catch (e) {
+    } catch(e) {
       return res
         .status(400)
         .send({ status: false, msg: 'Invalid parameters!' });
     }
 
-    if (!items || items.length == 0)
+    if(!items || items.length == 0) {
       return res
         .status(400)
         .send({ status: false, msg: 'Parameters are missing!' });
+    }
 
     /* ID Check */
     var fromWalletId = req.body.fromWalletId;
-    if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/))
+    if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
+    }
     /* ID Check End */
 
     var fromWallet = await Wallet.findOne({ _id: fromWalletId });
-    if (!fromWallet)
+    if(!fromWallet) {
       return res
         .status(400)
-        .send({ status: false, msg: "Wallet doesn't exist!" });
+        .send({ status: false, msg: 'Wallet doesn\'t exist!' });
+    }
 
     /* Check Balance */
     contractObj.methods
@@ -490,12 +511,10 @@ module.exports = function(app) {
 
         var nonce = await web3.eth
           .getTransactionCount(fromWallet.address)
-          .catch(error => {
-            return res.status(400).send({
-              status: false,
-              msg: 'Error occurred in getting transaction count!'
-            });
-          });
+          .catch(error => res.status(400).send({
+            status: false,
+            msg: 'Error occurred in getting transaction count!'
+          }));
 
         var privateKeyStr = stripHexPrefix(
           cryptr.decrypt(fromWallet.privateKey)
@@ -508,18 +527,20 @@ module.exports = function(app) {
 
         var newItems = [];
 
-        for (var i in items) {
+        for(var i in items) {
           /* Begin For */
-          if (items[i].action != 'spent')
+          if(items[i].action != 'spent')
             // If it is import or export
+            {
             continue;
+          }
 
           /* ID Check */
-          if (!items[i].toWalletId.match(/^[0-9a-fA-F]{24}$/)) continue;
+          if(!items[i].toWalletId.match(/^[0-9a-fA-F]{24}$/)) continue;
           /* ID Check End */
 
           var toWallet = await Wallet.findOne({ _id: items[i].toWalletId });
-          if (!toWallet) continue;
+          if(!toWallet) continue;
 
           items[i].toWallet = toWallet;
 
@@ -529,31 +550,32 @@ module.exports = function(app) {
           var tempBalance = tempResult / Math.pow(10, app.contract.decimals);
 
           var amount = parseFloat(items[i].amount);
-          var amountFee = parseFloat((amount * app.percent) / 100);
+          var amountFee = parseFloat(amount * app.percent / 100);
           var totalAmount = amount + amountFee;
 
           items[i].balance = parseFloat(tempBalance) + amount; //Fresh Balance
 
-          if (totalAmount > balance) continue;
+          if(totalAmount > balance) continue;
 
           balance -= totalAmount;
 
           newItems.push(items[i]);
         } /* End For */
 
-        if (newItems.length == 0)
+        if(newItems.length == 0) {
           return res
             .status(400)
             .send({ status: false, msg: 'Nothing to process!' });
+        }
 
         /* Supply Gas */
         var totalGas = new BigNumber(0);
 
-        for (var i in newItems) {
+        for(var i in newItems) {
           var toWallet = newItems[i].toWallet;
 
           var amount = parseFloat(newItems[i].amount);
-          var amountFee = parseFloat((amount * app.percent) / 100);
+          var amountFee = parseFloat(amount * app.percent / 100);
 
           var tokenAmount = new BigNumber(
             (amount * Math.pow(10, app.contract.decimals)).toString()
@@ -563,16 +585,16 @@ module.exports = function(app) {
           );
 
           /* Estimate gas by doubling. Because sometimes, gas is estimated incorrectly and transaction fails. */
-          var tempGas =
-            2 *
-            parseInt(
+          var tempGas
+            = 2
+            * parseInt(
               await contractObj.methods
                 .transfer(toWallet.address, tokenAmount)
                 .estimateGas({ gas: 450000 })
             );
-          var tempGasFee =
-            2 *
-            parseInt(
+          var tempGasFee
+            = 2
+            * parseInt(
               await contractObj.methods
                 .transfer(app.revenueWallet.address, tokenAmountFee)
                 .estimateGas({ gas: 450000 })
@@ -598,19 +620,19 @@ module.exports = function(app) {
         var giveETH = 0;
         var flag = false;
 
-        if (remainingETH < totalETH) {
+        if(remainingETH < totalETH) {
           giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
           flag = true;
         }
 
-        console.log('giveETH - ' + giveETH);
+        console.log(`giveETH - ${giveETH}`);
         /* Supply Gas End */
 
         /* Promise Start */
         payGasAsETH(fromWallet.address, giveETH, flag)
           .then(
             async function(result) {
-              for (var i in newItems) {
+              for(var i in newItems) {
                 /* Begin For */
                 var tokenAmount = new BigNumber(newItems[i].tokenAmount);
                 var tokenAmountFee = new BigNumber(newItems[i].tokenAmountFee);
@@ -642,7 +664,7 @@ module.exports = function(app) {
                 var serializedTxFee = txFee.serialize();
 
                 web3.eth
-                  .sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
+                  .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
                   .on('transactionHash', hash => {
                     console.log('batchRequest item transactionHash', hash);
                   })
@@ -672,12 +694,12 @@ module.exports = function(app) {
                 var serializedTx = tx.serialize();
 
                 var transaction = web3.eth.sendSignedTransaction.request(
-                  '0x' + serializedTx.toString('hex'),
+                  `0x${serializedTx.toString('hex')}`,
                   'transactionHash',
                   function(err, hash) {
                     processed++;
 
-                    if (err) {
+                    if(err) {
                       newItems[processed - 1].status = 'notprocessed';
                     } else {
                       newItems[processed - 1].status = 'processed';
@@ -687,7 +709,7 @@ module.exports = function(app) {
                         from: fromWallet._id,
                         to: newItems[processed - 1].toWallet._id,
                         amount: newItems[processed - 1].tokenAmount,
-                        hash: hash,
+                        hash,
                         action: 'spent'
                       })
                         .then(result => {
@@ -698,12 +720,13 @@ module.exports = function(app) {
                         });
                     }
 
-                    if (processed == newItems.length)
+                    if(processed == newItems.length) {
                       return res.send({
                         status: true,
                         items: newItems,
-                        balance: balance
+                        balance
                       });
+                    }
                   }
                 );
 
@@ -732,7 +755,7 @@ module.exports = function(app) {
 
   function payGasAsETH(toAddress, ethAmount, flag) {
     return new Promise(async (resolve, reject) => {
-      if (!flag) resolve();
+      if(!flag) resolve();
       else {
         var gasPrice = await web3.eth.getGasPrice();
 
@@ -761,7 +784,7 @@ module.exports = function(app) {
         var serializedTx = tx.serialize();
 
         web3.eth
-          .sendSignedTransaction('0x' + serializedTx.toString('hex'))
+          .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
           .then(function(receipt) {
             resolve();
           })
@@ -777,14 +800,14 @@ module.exports = function(app) {
   app.post('/transferTokensInternally', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
     //console.log('req.body', req.body);
-    if (
-      !req.body.fromWalletId ||
-      !req.body.toWalletId ||
-      !req.body.tokenAmount ||
-      isNaN(req.body.tokenAmount)
+    if(
+      !req.body.fromWalletId
+      || !req.body.toWalletId
+      || !req.body.tokenAmount
+      || isNaN(req.body.tokenAmount)
     ) {
       return res.send({ status: false, msg: 'Incorrect parameters!' });
     }
@@ -792,42 +815,44 @@ module.exports = function(app) {
     /* ID Check */
     var fromWalletId = req.body.fromWalletId;
     // validate fromWalletId is 12-byte ObjectId value
-    if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/))
+    if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
       return res.send({ status: false, msg: 'Invalid wallet id!' });
+    }
     /* ID Check End */
 
     var fromWallet = await Wallet.findOne({ _id: fromWalletId });
-    if (!fromWallet) {
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
+    if(!fromWallet) {
+      return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
     }
 
     /* ID Check */
     var toWalletId = req.body.toWalletId;
     // validate toWalletId is 12-byte ObjectId value
-    if (!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+    if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
       return res.send({ status: false, msg: 'Invalid wallet id!' });
     }
     /* ID Check End */
 
     // find toWalletId in tms db
     var toWallet = await Wallet.findOne({ _id: toWalletId });
-    if (!toWallet) {
-      return res.send({ status: false, msg: "Wallet doesn't exist!" });
+    if(!toWallet) {
+      return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
     }
     // set the amount to be transfered as a floating point number
     var amount = parseFloat(req.body.tokenAmount);
 
     // verify the amount is greater that 0
-    if (amount == 0)
+    if(amount == 0) {
       return res.send({
         status: false,
-        msg: "Token amount shouldn't be equal to 0!"
+        msg: 'Token amount shouldn\'t be equal to 0!'
       });
+    }
 
     // set floating point number to 2 decimal places
     amount = parseFloat(amount.toFixed(2));
     // calculate fee based
-    var fee = parseFloat((amount * app.percent) / 100); // Fee to Revenue Wallet
+    var fee = parseFloat(amount * app.percent / 100); // Fee to Revenue Wallet
     // trim fee to two decimal places
     fee = parseFloat(fee.toFixed(2));
     //calculate total amount to be transfered
@@ -842,14 +867,14 @@ module.exports = function(app) {
         var balance = result / Math.pow(10, app.contract.decimals);
         // check if balance is 0
         // console.log('balance', balance);
-        if (balance === 0) {
+        if(balance === 0) {
           console.log('err', 'Nothing to transfer!');
           return res
             .status(400)
             .send({ status: false, msg: 'Nothing to transfer!' });
         }
         // check if totalAmount is greater than balance and reject if true
-        if (totalAmount > balance) {
+        if(totalAmount > balance) {
           console.log('err', 'Insufficient balance!');
           return res
             .status(400)
@@ -887,9 +912,9 @@ module.exports = function(app) {
               tokenAmount
             );
             /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
-            var gasESTFee =
-              2 *
-              parseInt(
+            var gasESTFee
+              = 2
+              * parseInt(
                 await contractObj.methods
                   .transfer(app.revenueWallet.address, feeAmount)
                   .estimateGas({ gas: 450000 })
@@ -899,9 +924,9 @@ module.exports = function(app) {
               toWallet.address,
               tokenAmount
             );
-            var gasEST =
-              2 *
-              parseInt(
+            var gasEST
+              = 2
+              * parseInt(
                 await contractObj.methods
                   .transfer(toWallet.address, tokenAmount)
                   .estimateGas({ gas: 450000 })
@@ -914,7 +939,7 @@ module.exports = function(app) {
             );
             var gasPrice = await web3.eth.getGasPrice();
 
-            console.log('gasPrice - ' + gasPrice);
+            console.log(`gasPrice - ${gasPrice}`);
 
             var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
             // console.log('remainingGas - ' + remainingGas);
@@ -924,14 +949,14 @@ module.exports = function(app) {
             var giveETH = 0;
             var flag = false;
 
-            if (remainingETH < totalETH) {
+            if(remainingETH < totalETH) {
               // need to supply gas
               giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 
               flag = true;
             }
 
-            console.log('giveETH - ' + giveETH);
+            console.log(`giveETH - ${giveETH}`);
             /* Supply Gas End */
 
             /* Promise Start */
@@ -939,12 +964,10 @@ module.exports = function(app) {
               async function(result) {
                 var nonce = await web3.eth
                   .getTransactionCount(fromWallet.address)
-                  .catch(error => {
-                    return res.send({
-                      status: false,
-                      msg: 'Error occurred in getting transaction count!'
-                    });
-                  });
+                  .catch(error => res.send({
+                    status: false,
+                    msg: 'Error occurred in getting transaction count!'
+                  }));
 
                 /* Send Fee */
                 var txParamsFee = {
@@ -964,7 +987,7 @@ module.exports = function(app) {
                 var serializedTxFee = txFee.serialize();
 
                 web3.eth
-                  .sendSignedTransaction('0x' + serializedTxFee.toString('hex'))
+                  .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
                   .on('transactionHash', hash => {
                     console.log('transactionHash', hash);
                   })
@@ -994,27 +1017,25 @@ module.exports = function(app) {
 
                 var sent = false;
                 web3.eth
-                  .sendSignedTransaction('0x' + serializedTx.toString('hex'))
+                  .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
                   .on('transactionHash', function(hash) {
-                    var fromBalance =
-                      parseFloat(balance) - parseFloat(totalAmount);
+                    var fromBalance
+                      = parseFloat(balance) - parseFloat(totalAmount);
                     toBalance = parseFloat(toBalance) + parseFloat(amount);
 
                     History.create({
                       from: fromWallet._id,
                       to: toWallet._id,
                       amount: tokenAmount,
-                      hash: hash,
+                      hash,
                       action: 'spent'
                     })
-                      .then(result => {
-                        return res.status(201).send({
-                          status: true,
-                          hash: hash,
-                          fromBalance: fromBalance,
-                          toBalance: toBalance
-                        });
-                      })
+                      .then(result => res.status(201).send({
+                        status: true,
+                        hash,
+                        fromBalance,
+                        toBalance
+                      }))
                       .catch(err => {
                         console.log('err', err);
                         return res.status(400).send({
@@ -1028,7 +1049,7 @@ module.exports = function(app) {
                     console.log('receipt', receipt);
                   })
                   .on('error', err => {
-                    if (!sent) console.log('err', err);
+                    if(!sent) console.log('err', err);
                     console.log('err', err);
                     return res
                       .status(400)
@@ -1060,27 +1081,28 @@ module.exports = function(app) {
   app.post('/history', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
-    if (msg != '') return res.send({ status: false, msg: msg });
+    if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
 
-    if (!req.body.walletId)
+    if(!req.body.walletId) {
       return res.send({ status: false, msg: 'Wallet is missing!' });
+    }
 
     var walletId = req.body.walletId;
     var history = await History.find({
       $or: [{ from: walletId }, { to: walletId }]
     });
 
-    return res.send({ status: true, history: history });
+    return res.send({ status: true, history });
   });
 
   function checkAuth(req) {
     var key = '';
-    if (req.headers['x-api-key']) key = req.headers['x-api-key'];
+    if(req.headers['x-api-key']) key = req.headers['x-api-key'];
 
-    if (key != app.key) return 'You are not authorized!';
+    if(key != app.key) return 'You are not authorized!';
 
-    if (!flag) return 'System is turned off!';
+    if(!flag) return 'System is turned off!';
 
     return '';
   }

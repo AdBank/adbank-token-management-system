@@ -1,10 +1,10 @@
-
 'use strict';
+
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
-// History Schema
-var HistorySchema = new Schema({
+// Transaction Schema
+var TransactionSchema = new Schema({
   from: {
     type: String
   },
@@ -25,4 +25,4 @@ var HistorySchema = new Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('History', HistorySchema);
+module.exports = mongoose.model('Transaction', TransactionSchema);
