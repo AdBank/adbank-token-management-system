@@ -1,3 +1,9 @@
+'use strict';
+/*eslint no-process-env:0*/
+
+// Test specific configuration
+// =================================
+
 module.exports = {
   // db: {
   //   url : 'mongodb://localhost:27017/adbank'
@@ -20,7 +26,7 @@ module.exports = {
       provider: '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
     },
     rpc: {
-      provider: 'http://localhost:8545/'
+      provider: 'https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq'
     }
   },
   contract: {

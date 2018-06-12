@@ -1,3 +1,9 @@
+'use strict';
+/*eslint no-process-env:0*/
+
+// Test specific configuration
+// =================================
+
 module.exports = {
   // db: {
   //   url: process.env.MONGO_URI || 'mongodb://mongo:27017/adbank'

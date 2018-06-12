@@ -11,7 +11,7 @@ const config = require('./config/environment');
 
 // set the uri to mongo depending on environment
 let uri = '';
-if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+if(process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
   uri = `mongodb://${config.mongo.uri}:${config.mongo.port}/${config.mongo.db}`;
 } else {
   uri = `mongodb://${config.mongo.username}:${config.mongo.password}@${
@@ -32,7 +32,7 @@ app.web3 = config.web3;
 
 // Contract Configuration
 app.contract = {};
-app.contract.abi = require(`./app/resources/${config.contract.abi}`);
+// app.contract.abi = require(`../config/${config.contract.abi}`);
 app.contract.address = config.contract.address;
 app.contract.owner_address = config.contract.owner_address;
 app.contract.decimals = config.contract.decimals;
@@ -63,7 +63,9 @@ app.use(
 );
 app.use(morgan('dev'));
 app.use(errorHandler());
-require('./app/routes/api')(app);
+//. require('./api')(app);
+require('./config/express').default(app);
+require('./routes').default(app);
 
 // Start server
 function startServer() {

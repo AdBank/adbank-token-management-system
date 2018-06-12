@@ -1,3 +1,9 @@
+'use strict';
+/*eslint no-process-env:0*/
+
+// Development specific configuration
+// =================================
+
 module.exports = {
   // db: {
   //   url: 'mongodb://localhost:27017/adbank'
@@ -19,7 +25,7 @@ module.exports = {
       provider: '/Projects/adbank-token-network-production/devnet/geth.ipc' // Network IPC Provider
     },
     rpc: {
-      provider: 'https://mainnet.infura.io/4j5O9eS3JbK1oetIOMTq'
+      provider: 'https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq'
     }
   },
   contract: {
@@ -36,7 +42,7 @@ module.exports = {
     privateKey: '' // Network Wallet Private Key
   },
   revenueWallet: {
-    address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to get fee from interal wallet
+    address: '0xf3399d84571fac96eed37cd4b50baee807b67360' // Typically used to get fee from interal wallet
   },
   //chainId: 1337, // Network Chain ID,
   chainId: 1,
