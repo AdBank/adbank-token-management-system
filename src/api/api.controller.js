@@ -219,37 +219,37 @@ export async function holderTokenBalance(req, res) {
     })
     .catch(err => res.status(400).send({ status: false, msg: err }));
 }
-export async function walletTokenBalance(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+// export async function walletTokenBalance(req, res) {
+//   /* Auth Begin */
+//   var msg = checkAuth(req);
+//   if(msg != '') return res.send({ status: false, msg });
+//   /* Auth End */
 
-  if(!req.body.walletId) {
-    return res.send({ status: false, msg: 'Wallet ID is missing!' });
-  }
+//   if(!req.body.walletId) {
+//     return res.send({ status: false, msg: 'Wallet ID is missing!' });
+//   }
 
-  var walletId = req.body.walletId;
-  if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
-    return res.send({ status: false, msg: 'Invalid wallet id!' });
-  }
+//   var walletId = req.body.walletId;
+//   if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
+//     return res.send({ status: false, msg: 'Invalid wallet id!' });
+//   }
 
-  var wallet = await Wallet.findOne({ _id: walletId });
+//   var wallet = await Wallet.findOne({ _id: walletId });
 
-  if(!wallet) {
-    return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
-  }
+//   if(!wallet) {
+//     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+//   }
 
-  contractObj.methods
-    .balanceOf(wallet.address)
-    .call({ from: config.contract.ownerAddress })
-    .then(result => {
-      var balance = result / Math.pow(10, config.contract.decimals);
+//   contractObj.methods
+//     .balanceOf(wallet.address)
+//     .call({ from: config.contract.ownerAddress })
+//     .then(result => {
+//       var balance = result / Math.pow(10, config.contract.decimals);
 
-      return res.status(200).send({ status: true, balance });
-    })
-    .catch(err => res.status(400).send({ status: false, msg: err }));
-}
+//       return res.status(200).send({ status: true, balance });
+//     })
+//     .catch(err => res.status(400).send({ status: false, msg: err }));
+// }
 export async function wallet(req, res) {
   /* Auth Begin */
   var msg = checkAuth(req);

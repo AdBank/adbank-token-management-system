@@ -5,7 +5,9 @@
 'use strict';
 
 export default function(app) {
+  app.use('/wallets', require('./api/wallet'));
   app.use('/', require('./api/'));
+
   // All undefined asset or api routes should return a 404
   app
     .route('/:url(api|auth|components|app|bower_components|assets)/*')

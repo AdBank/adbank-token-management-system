@@ -22,16 +22,11 @@ module.exports = {
     args: process.env.MONGODB_ARGS || ''
   },
   web3: {
-    ipc: {
-      provider:
-        process.env.WEB3_PROVIDER || '/home/ubuntu/.ethereum/testnet/geth.ipc' // Network IPC Provider
-    },
     rpc: {
       provider: 'https://mainnet.infura.io/4j5O9eS3JbK1oetIOMTq'
     }
   },
   contract: {
-    abi: 'abi.json', // Contract ABI
     address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3', // Address where contract is deployed
     owner_address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
     // Contract Owner Address
@@ -48,5 +43,6 @@ module.exports = {
   },
   chainId: 1, // Network Chain ID,
   key: '&6831IlYmK33d', // Security Key
-  percent: 25 // Fee Percentage
+  percent: 25, // Fee Percentage
+  seedDB: false
 };

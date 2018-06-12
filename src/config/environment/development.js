@@ -22,15 +22,11 @@ module.exports = {
     db: process.env.MONGODB_DB || 'adbank-tms-dev'
   },
   web3: {
-    ipc: {
-      provider: '/Projects/adbank-token-network-production/devnet/geth.ipc' // Network IPC Provider
-    },
     rpc: {
       provider: 'https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq'
     }
   },
   contract: {
-    abi: '', // Contract ABI
     //owner_address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Contract Owner Address
     owner_address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
     //address: '0x69c215f4d9940948c257ad45a28032b4b3d5cafd', // Address where contract is deployed
@@ -48,5 +44,7 @@ module.exports = {
   //chainId: 1337, // Network Chain ID,
   chainId: 1,
   key: '&6831IlYmK33d', // Security Key
-  percent: 25 // Fee Percentage
+  percent: 25, // Fee Percentage,
+  // seed the db in development mode
+  seedDB: true
 };

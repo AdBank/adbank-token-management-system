@@ -18,10 +18,10 @@ exports.default = function(app) {
   app.use(compression());
   app.use(methodOverride());
 
-  if (env === 'development') {
+  if(env === 'development') {
   }
 
-  if (env === 'development' || env === 'test' || env === 'production') {
+  if(env === 'development' || env === 'test' || env === 'production') {
     app.use(morgan('dev'));
     app.use(errorHandler()); // Error handler - has to be last
   }

@@ -15,13 +15,14 @@
     "serve": "NODE_ENV=production node server.js",
     "pretest": "npm run clean",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "NODE_ENV=test mocha --reporter spec --compilers js:babel-register ./src/**/*.spec.js",
-    "test:integration": "NODE_ENV=test mocha --reporter spec --compilers js:babel-register ./src/**/*.integration.js",
-    "test:watch": "NODE_ENV=test mocha --reporter min --watch --compilers js:babel-register ./src/**/*.spec.js --watch",
+    "test:unit": "NODE_ENV=test mocha -r esm --recursive --reporter spec  ./src/**/*.spec.js",
+    "test:integration": "NODE_ENV=test mocha -r esm --reporter spec  ./src/**/*.integration.js --exit",
+    "test:watch": "NODE_ENV=test mocha -r esm  --reporter min --watch ./src/**/*.spec.js --watch",
     "clean": "npm run rimraf dist",
     "rimraf": "rimraf"
   },
   "dependencies": {
+    "@std/esm": "^0.26.0",
     "bignumber.js": "^6.0.0",
     "body-parser": "^1.18.2",
     "compression": "^1.7.2",
@@ -44,11 +45,21 @@
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-things": "^0.2.0",
     "eslint": "^3.13.1",
     "eslint-config-standard": "^11.0.0-beta.0",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.6.0",
-    "eslint-plugin-standard": "^3.0.1"
+    "eslint-plugin-standard": "^3.0.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^5.2.0",
+    "proxyquire": "^2.0.1",
+    "should": "^13.2.1",
+    "sinon": "^6.0.0",
+    "sinon-chai": "^3.2.0",
+    "supertest": "^3.1.0"
   }
 }
