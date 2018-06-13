@@ -6,7 +6,9 @@ import * as auth from '../../auth/auth.service';
 
 var router = Router();
 
-router.get('/', auth.isAuthenticated(), controller.index);
 router.post('/', auth.isAuthenticated(), controller.create);
+router.get('/', auth.isAuthenticated(), controller.index);
+// get a single transaction by transaction id (mongo bson id)
+router.get('/:id', auth.isAuthenticated(), controller.show);
 
 module.exports = router;

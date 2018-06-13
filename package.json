@@ -15,7 +15,7 @@
     "serve": "NODE_ENV=production node server.js",
     "pretest": "npm run clean",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "NODE_ENV=test mocha -r esm --recursive --reporter spec  ./src/**/*.spec.js",
+    "test:unit": "NODE_ENV=test mocha -r esm --recursive --reporter spec  ./src/**/*.spec.js --exit",
     "test:integration": "NODE_ENV=test mocha -r esm --reporter spec  ./src/**/*.integration.js --exit",
     "test:watch": "NODE_ENV=test mocha -r esm  --reporter min --watch ./src/**/*.spec.js --watch",
     "clean": "npm run rimraf dist",
