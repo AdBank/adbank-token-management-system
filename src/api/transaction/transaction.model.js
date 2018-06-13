@@ -6,6 +6,14 @@ var Schema = mongoose.Schema;
 // Transaction Schema
 var TransactionSchema = new Schema(
   {
+    account: {
+      type: String,
+      required: true
+    },
+    txId: {
+      type: String,
+      required: true
+    },
     from: {
       type: String,
       required: true
@@ -26,6 +34,9 @@ var TransactionSchema = new Schema(
     },
     gas: {
       type: Number
+    },
+    receiptId: {
+      type: String
     }
   },
   { timestamps: true }

@@ -34,11 +34,6 @@ var contractObj = new web3.eth.Contract(abi, config.contract.address);
 contractObj.options.from = config.contract.ownerAddress;
 let importedWallets = [];
 
-function checkAuth(req) {
-  if (req.headers['x-api-key'] != config.key) { return 'You are not authorized!'; }
-  return '';
-}
-
 function respondWithResult(res, statusCode) {
   statusCode = statusCode || 200;
   return entity => {
@@ -62,8 +57,10 @@ export async function index(req, res) {
 
 export async function create(req, res) {
   if (
-    !req.body.fromWalletId
-    || !req.body.toWalletId
+    !req.body.account
+    || !req.body.txId
+    || !req.body.from
+    || !req.body.to
     || !req.body.amount
     || isNaN(req.body.amount)
   ) {
@@ -72,9 +69,12 @@ export async function create(req, res) {
   }
 
   Transaction.create({
-    from: req.body.toWalletId,
-    to: req.body.fromWalletId,
-    amount: req.body.amount
+    account: req.body.account,
+    txId: req.body.txId,
+    from: req.body.to,
+    to: req.body.from,
+    amount: req.body.amount,
+    action: 'spent'
   }).then(respondWithResult(res, 201))
     .catch(handleError(res));
 }

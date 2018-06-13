@@ -1,8 +1,38 @@
 {
-    "editor.formatOnSave": true,
     // Enable per-language
     "[javascript]": {
         "editor.formatOnSave": true
-    }
-
+    },
+    "javascript.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": false,
+    "files.associations": {
+        "*.vue": "html"
+    },
+    "editor.formatOnSave": true,
+    // Defines space handling before function argument parentheses. Requires TypeScript >= 2.1.5.
+    "typescript.format.insertSpaceBeforeFunctionParenthesis": true,
+    // Defines space handling before function argument parentheses. Requires TypeScript >= 2.1.5.
+    "javascript.format.insertSpaceBeforeFunctionParenthesis": true,
+    // Eslint options
+    "eslint.enable": true,
+    "eslint.options": {
+        "extensions": [
+            ".html",
+            ".js",
+            ".vue",
+            ".jsx"
+        ]
+    },
+    // An array of language ids which should be validated by ESLint
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        {
+            "language": "html",
+            "autoFix": true
+        }
+    ],
+    // Run the linter on save (onSave) or on type (onType)
+    "eslint.run": "onSave",
+    // Turns auto fix on save on or off.
+    "eslint.autoFixOnSave": true
 }
