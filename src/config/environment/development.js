@@ -28,7 +28,7 @@ module.exports = {
   },
   contract: {
     //owner_address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Contract Owner Address
-    owner_address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
+    ownerAddress: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
     //address: '0x69c215f4d9940948c257ad45a28032b4b3d5cafd', // Address where contract is deployed
     address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
     decimals: 18 // Token decimals
@@ -46,5 +46,9 @@ module.exports = {
   key: '&6831IlYmK33d', // Security Key
   percent: 25, // Fee Percentage,
   // seed the db in development mode
+
+  nats: {
+    servers: ['nats://gnatsd:4222']
+  },
   seedDB: true
 };

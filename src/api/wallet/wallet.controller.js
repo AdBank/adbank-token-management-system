@@ -14,14 +14,6 @@ contractObj.options.from = config.contract.ownerAddress;
 
 var cryptr = new Cryptr('AdBankTokenNetwork');
 
-function checkAuth(req) {
-  var key = '';
-  if(req.headers['x-api-key']) key = req.headers['x-api-key'];
-
-  if(key != config.key) return 'You are not authorized!';
-  return '';
-}
-
 /**
  * @api {post} /api/v1/wallets Create a watllet
  * @apiVersion 1.0.0
@@ -55,17 +47,12 @@ function checkAuth(req) {
  */
 
 export async function create(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.sendStatus(401);
-  /* Auth End */
-
-  if(!req.body.userId) {
+  if (!req.body.userId) {
     return res.status(400).send({ status: false, msg: 'User is missing!' });
   }
 
   let result = await Wallet.findOne({ userId: req.body.userId });
-  if(result) {
+  if (result) {
     return res.status(400).send({
       status: false,
       msg: 'Already registered!',
@@ -75,7 +62,7 @@ export async function create(req, res) {
 
   let account = web3.eth.accounts.create(web3.utils.randomHex(32));
 
-  if(!account) {
+  if (!account) {
     return res.status(400).send({
       status: false,
       msg: 'Error occurred in creating new account!'
@@ -105,21 +92,21 @@ export async function create(req, res) {
 export async function walletTokenBalance(req, res) {
   /* Auth Begin */
   var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
+  if (msg != '') return res.send({ status: false, msg });
   /* Auth End */
 
-  if(!req.body.walletId) {
+  if (!req.body.walletId) {
     return res.send({ status: false, msg: 'Wallet ID is missing!' });
   }
 
   var walletId = req.body.walletId;
-  if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
+  if (!walletId.match(/^[0-9a-fA-F]{24}$/)) {
     return res.send({ status: false, msg: 'Invalid wallet id!' });
   }
 
   var wallet = await Wallet.findOne({ _id: walletId });
 
-  if(!wallet) {
+  if (!wallet) {
     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
   }
 

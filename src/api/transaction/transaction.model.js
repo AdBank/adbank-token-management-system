@@ -7,13 +7,16 @@ var Schema = mongoose.Schema;
 var TransactionSchema = new Schema(
   {
     from: {
-      type: String
+      type: String,
+      required: true
     },
     to: {
-      type: String
+      type: String,
+      required: true
     },
     amount: {
-      type: Number
+      type: Number,
+      required: true
     },
     hash: {
       type: String
