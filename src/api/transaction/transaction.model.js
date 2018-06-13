@@ -1,10 +1,11 @@
 'use strict';
 
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+import mongoose from 'mongoose';
+// var Schema = mongoose.Schema;
+import { registerEvents } from './transaction.events';
 
 // Transaction Schema
-var TransactionSchema = new Schema(
+var TransactionSchema = new mongoose.Schema(
   {
     account: {
       type: String,
@@ -42,4 +43,5 @@ var TransactionSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Transaction', TransactionSchema);
+registerEvents(TransactionSchema);
+export default mongoose.model('Transaction', TransactionSchema);

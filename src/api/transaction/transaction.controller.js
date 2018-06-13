@@ -5,12 +5,12 @@ const Web3 = require('web3');
 const Cryptr = require('cryptr');
 const Wallet = require('../wallet/wallet.model');
 const History = require('../history/history.model');
-const Transaction = require('./transaction.model');
 const BigNumber = require('bignumber.js');
 const net = require('net');
 const Tx = require('ethereumjs-tx');
 const stripHexPrefix = require('strip-hex-prefix');
 const ethereumAddress = require('ethereum-address');
+import Transaction from './transaction.model';
 import config from '../../config/environment';
 import abi from '../../config/abi.json';
 
@@ -60,6 +60,7 @@ export async function show(req, res) {
 }
 
 export async function create(req, res) {
+  console.log('req.body', req.body);
   if(
     !req.body.account
     || !req.body.txId
@@ -72,7 +73,7 @@ export async function create(req, res) {
     return res.sendStatus(422);
   }
 
-  Transaction.create({
+  return Transaction.create({
     account: req.body.account,
     txId: req.body.txId,
     from: req.body.to,

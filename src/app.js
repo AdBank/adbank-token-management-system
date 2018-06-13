@@ -73,6 +73,8 @@ function startServer() {
   });
 }
 
+var producer = require('./api/transaction/transaction.socket').register;
+
 seedDatabaseIfNeeded()
   .then(startServer)
   .catch(err => console.log('[Express] error starting server', err));
