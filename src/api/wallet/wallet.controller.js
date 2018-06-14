@@ -3,13 +3,17 @@
 import Wallet from './wallet.model';
 import Web3 from 'web3';
 import config from '../../config/environment';
-import abi from '../../config/abi.json';
+// import abi from '../../config/abi.json';
 import Cryptr from 'cryptr';
+import fs from 'fs';
+
+var appRoot = process.cwd();
+let abi = fs.readFileSync(`${appRoot}/abi.json`);
 
 /* Web3 Initialization */
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 /* Contract Initialization */
-var contractObj = new web3.eth.Contract(abi, config.contract.address);
+var contractObj = new web3.eth.Contract(JSON.parse(abi), config.contract.address);
 contractObj.options.from = config.contract.ownerAddress;
 
 var cryptr = new Cryptr('AdBankTokenNetwork');
@@ -47,12 +51,12 @@ var cryptr = new Cryptr('AdBankTokenNetwork');
  */
 
 export async function create(req, res) {
-  if (!req.body.userId) {
+  if(!req.body.userId) {
     return res.status(400).send({ status: false, msg: 'User is missing!' });
   }
 
   let result = await Wallet.findOne({ userId: req.body.userId });
-  if (result) {
+  if(result) {
     return res.status(400).send({
       status: false,
       msg: 'Already registered!',
@@ -62,7 +66,7 @@ export async function create(req, res) {
 
   let account = web3.eth.accounts.create(web3.utils.randomHex(32));
 
-  if (!account) {
+  if(!account) {
     return res.status(400).send({
       status: false,
       msg: 'Error occurred in creating new account!'
@@ -92,21 +96,21 @@ export async function create(req, res) {
 export async function walletTokenBalance(req, res) {
   /* Auth Begin */
   var msg = checkAuth(req);
-  if (msg != '') return res.send({ status: false, msg });
+  if(msg != '') return res.send({ status: false, msg });
   /* Auth End */
 
-  if (!req.body.walletId) {
+  if(!req.body.walletId) {
     return res.send({ status: false, msg: 'Wallet ID is missing!' });
   }
 
   var walletId = req.body.walletId;
-  if (!walletId.match(/^[0-9a-fA-F]{24}$/)) {
+  if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
     return res.send({ status: false, msg: 'Invalid wallet id!' });
   }
 
   var wallet = await Wallet.findOne({ _id: walletId });
 
-  if (!wallet) {
+  if(!wallet) {
     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
   }
 

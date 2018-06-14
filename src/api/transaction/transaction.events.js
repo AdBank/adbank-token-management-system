@@ -26,6 +26,7 @@ function registerEvents(Transaction) {
 
 function emitEvent(event) {
   return function(doc) {
+    console.log('doc', doc);
     TransactionEvents.emit(`${event}:${doc._id}`, doc);
     TransactionEvents.emit(event, doc);
   };

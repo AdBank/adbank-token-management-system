@@ -63,7 +63,7 @@ describe('Transaction API:', () => {
   after(() => Transaction.remove());
 
   describe('POST /api/v1/transactions', () => {
-    it('should respond with a transaction profile when authenticated', done => {
+    it('should respond with a transaction when authenticated', done => {
       request(app)
         .post('/api/v1/transactions')
         .set('x-api-key', `${config.key}`)
@@ -72,7 +72,8 @@ describe('Transaction API:', () => {
           txId: '5b17f7a059ca190014773f8d',
           from: '5b17f7a059ca190014773f8c',
           to: '5b17f7b559ca19001477408e',
-          amount: '1000'
+          amount: '1000',
+          status: 'starting'
         })
         .expect(201)
         .expect('Content-Type', /json/)

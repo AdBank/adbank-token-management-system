@@ -11,11 +11,17 @@ const Tx = require('ethereumjs-tx');
 const stripHexPrefix = require('strip-hex-prefix');
 const ethereumAddress = require('ethereum-address');
 import Transaction from './transaction.model';
+import Receipt from '../receipt/receipt.model';
 import config from '../../config/environment';
-import abi from '../../config/abi.json';
+
+// const abi = require('../../config/abi.json');
+// import abi from '../../config/abi.json';
+import fs from 'fs';
+
+var appRoot = process.cwd();
+let abi = fs.readFileSync(`${appRoot}/abi.json`);
 
 import NATS from 'nats';
-const uuidv4 = require('uuid/v4');
 const nats = NATS.connect({ servers: config.nats.servers, json: true });
 
 BigNumber.config({ ERRORS: false });
@@ -30,14 +36,52 @@ var client = new net.Socket();
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 
 /* Contract Initialization */
-var contractObj = new web3.eth.Contract(abi, config.contract.address);
+var contractObj = new web3.eth.Contract(JSON.parse(abi), config.contract.address);
 contractObj.options.from = config.contract.ownerAddress;
 let importedWallets = [];
 
-function respondWithResult(res, statusCode) {
+
+function updateTransaction(data) {
+  let id = data._id;
+  let _data = {
+    account: data.account,
+    txId: data.txId,
+    from: data.from,
+    to: data.to,
+    amount: data.amount,
+    action: data.action,
+    status: data.status,
+    hash: data.hash || ''
+  };
+  // console.log('id', id);
+  // Reflect.deleteProperty(data, '_id');
+  // // Reflect.deleteProperty(data, 'txId');
+  // Reflect.deleteProperty(data, 'createdAt');
+  // Reflect.deleteProperty(data, 'updatedAt');
+  // Reflect.deleteProperty(data, '__v');
+  // delete _data._id;
+  // delete _data.__v;
+  // delete _data.updatedAt;
+  // delete _data.createdAt;
+  console.log('updateTransaction', data);
+  // console.log('data', data);
+  Transaction.findOneAndUpdate({ _id: id }, _data, { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }).exec()
+    .then(result => {
+      console.log('Transaction updated result', result);
+      return result.save();
+    })
+    .catch(err => console.log('update tx err', err));
+}
+
+
+function respondWithResult(res, statusCode, action) {
   statusCode = statusCode || 200;
+  action = action || 'get';
   return entity => {
     if(entity) {
+      if(action === 'create') {
+        handleTransaction(entity);
+      }
       return res.status(statusCode).json(entity);
     }
     return null;
@@ -76,284 +120,330 @@ export async function create(req, res) {
   return Transaction.create({
     account: req.body.account,
     txId: req.body.txId,
-    from: req.body.to,
-    to: req.body.from,
+    from: req.body.from,
+    to: req.body.to,
     amount: req.body.amount,
-    action: 'spent'
+    action: 'spent',
+    status: 'processing',
   })
-    .then(respondWithResult(res, 201))
+    .then(respondWithResult(res, 201, 'create'))
     .catch(handleError(res));
 }
 
-// /* ID Check */
-// var fromWalletId = req.body.fromWalletId;
-// // validate fromWalletId is 12-byte ObjectId value
-// if (!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
-//   console.log('Invalid wallet id!');
-//   return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
-// }
-// /* ID Check End */
 
-// var fromWallet = await Wallet.findOne({ _id: fromWalletId });
-// if (!fromWallet) {
-//   console.log('Wallet doesn\'t exist!');
-//   return res
-//     .status(400)
-//     .send({ status: false, msg: 'Wallet doesn\'t exist!' });
-// }
+async function handleTransaction(entity) {
+  /* ID Check */
+  let fromWalletId = entity.from;
+  // validate fromWalletId is 12-byte ObjectId value
+  if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+    console.log('Invalid wallet id!');
+  }
+  /* ID Check End */
 
-// /* ID Check */
-// var toWalletId = req.body.toWalletId;
-// // validate toWalletId is 12-byte ObjectId value
-// if (!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
-//   return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
-// }
-// /* ID Check End */
+  let fromWallet = await Wallet.findOne({ _id: fromWalletId });
+  if(!fromWallet) {
+    console.log('Wallet doesn\'t exist!');
+  }
 
-// // find toWalletId in tms db
-// var toWallet = await Wallet.findOne({ _id: toWalletId });
-// if (!toWallet) {
-//   return res
-//     .status(400)
-//     .send({ status: false, msg: 'Wallet doesn\'t exist!' });
-// }
-// // set the amount to be transfered as a floating point number
-// var amount = parseFloat(req.body.tokenAmount);
+  /* ID Check */
+  let toWalletId = entity.to;
+  // validate toWalletId is 12-byte ObjectId value
+  if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+    console.log('Invalid wallet id!');
+  }
+  /* ID Check End */
 
-// // verify the amount is greater that 0
-// if (amount == 0) {
-//   return res.status(400).send({
-//     status: false,
-//     msg: 'Token amount shouldn\'t be equal to 0!'
-//   });
-// }
+  // find toWalletId in tms db
+  let toWallet = await Wallet.findOne({ _id: toWalletId });
+  if(!toWallet) {
+    console.log('Wallet doesn\'t exist!');
+  }
+  // set the amount to be transfered as a floating point number
+  let amount = parseFloat(entity.amount);
 
-// // set floating point number to 2 decimal places
-// amount = parseFloat(amount.toFixed(2));
-// // calculate fee based
-// var fee = parseFloat(amount * config.percent / 100); // Fee to Revenue Wallet
-// // trim fee to two decimal places
-// fee = parseFloat(fee.toFixed(2));
-// //calculate total amount to be transfered
-// var totalAmount = parseFloat(amount) + parseFloat(fee);
+  // verify the amount is greater that 0
+  if(amount == 0) {
+    console.log('Token amount shouldn\'t be equal to 0!');
+  }
 
-// // Check balance of fromWallet account
-// contractObj.methods
-//   .balanceOf(fromWallet.address)
-//   .call({ from: config.contract.ownerAddress })
-//   .then(async result => {
-//     // console.log('result', result);
-//     var balance = result / Math.pow(10, config.contract.decimals);
-//     console.log('balance', balance, fromWallet.address, config.contract.ownerAddress);
-//     // check if balance is 0
-//     // console.log('balance', balance);
-//     if (balance === 0) {
-//       console.log('err', 'Nothing to transfer!');
-//       return res
-//         .status(400)
-//         .send({ status: false, msg: 'Nothing to transfer!' });
-//     }
-//     // check if totalAmount is greater than balance and reject if true
-//     if (totalAmount > balance) {
-//       console.log('err', 'Insufficient balance!');
-//       return res
-//         .status(400)
-//         .send({ status: false, msg: 'Insufficient balance!' });
-//     }
+  // set floating point number to 2 decimal places
+  amount = parseFloat(amount.toFixed(2));
+  // calculate fee based
+  var fee = parseFloat(amount * config.percent / 100); // Fee to Revenue Wallet
+  // trim fee to two decimal places
+  fee = parseFloat(fee.toFixed(2));
+  //calculate total amount to be transfered
+  let totalAmount = parseFloat(amount) + parseFloat(fee);
 
-//     contractObj.methods
-//       .balanceOf(toWallet.address)
-//       .call({ from: config.contract.ownerAddress })
-//       .then(async function (result) {
-//         var toBalance = result / Math.pow(10, config.contract.decimals);
+  // Check balance of fromWallet account
+  contractObj.methods
+    .balanceOf(fromWallet.address)
+    .call({ from: config.contract.ownerAddress })
+    .then(async result => {
+      // console.log('result', result);
+      var balance = result / Math.pow(10, config.contract.decimals);
+      console.log('balance', balance, fromWallet.address, config.contract.ownerAddress);
+      // check if balance is 0
+      if(balance === 0) {
+        console.log('err', 'Nothing to transfer!');
+        return;
+      }
+      // check if totalAmount is greater than balance and reject if true
+      if(totalAmount > balance) {
+        console.log('err', 'Insufficient balance!');
+        entity.status = 'failed : Insufficient balance!';
+        return updateTransaction(entity);
+      }
 
-//         var tokenAmount = new BigNumber(
-//           (amount * Math.pow(10, config.contract.decimals)).toString()
-//         );
-//         var feeAmount = new BigNumber(
-//           (fee * Math.pow(10, config.contract.decimals)).toString()
-//         );
+      contractObj.methods
+        .balanceOf(toWallet.address)
+        .call({ from: config.contract.ownerAddress })
+        .then(async function(balanceResult) {
+          var toBalance = balanceResult / Math.pow(10, config.contract.decimals);
 
-//         var privateKeyStr = stripHexPrefix(
-//           cryptr.decrypt(fromWallet.privateKey)
-//         );
-//         var privateKey = new Buffer(privateKeyStr, 'hex');
+          var tokenAmount = new BigNumber(
+            (amount * Math.pow(10, config.contract.decimals)).toString()
+          );
+          var feeAmount = new BigNumber(
+            (fee * Math.pow(10, config.contract.decimals)).toString()
+          );
 
-//         /* Supply Gas */
-//         var txDataFee = contractObj.methods
-//           .transfer(config.revenueWallet.address, feeAmount)
-//           .encodeABI();
-//         var txData = contractObj.methods
-//           .transfer(toWallet.address, tokenAmount)
-//           .encodeABI();
-//         console.log(
-//           'toWallet.address, tokenAmount',
-//           toWallet.address,
-//           tokenAmount
-//         );
-//         /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
-//         var gasESTFee
-//           = 2
-//           * parseInt(
-//             await contractObj.methods
-//               .transfer(config.revenueWallet.address, feeAmount)
-//               .estimateGas({ gas: 450000 })
-//           );
-//         console.log(
-//           'toWallet.address, tokenAmount',
-//           toWallet.address,
-//           tokenAmount
-//         );
-//         var gasEST
-//           = 2
-//           * parseInt(
-//             await contractObj.methods
-//               .transfer(toWallet.address, tokenAmount)
-//               .estimateGas({ gas: 450000 })
-//           );
-//         console.log('gasESTFee', gasESTFee);
-//         var totalGas = new BigNumber(gasEST + gasESTFee);
+          var privateKeyStr = stripHexPrefix(
+            cryptr.decrypt(fromWallet.privateKey)
+          );
+          var privateKey = new Buffer(privateKeyStr, 'hex');
 
-//         var ethAmount = new BigNumber(
-//           await web3.eth.getBalance(fromWallet.address)
-//         );
-//         var gasPrice = await web3.eth.getGasPrice();
+          /* Supply Gas */
+          var txDataFee = contractObj.methods
+            .transfer(config.revenueWallet.address, feeAmount)
+            .encodeABI();
+          var txData = contractObj.methods
+            .transfer(toWallet.address, tokenAmount)
+            .encodeABI();
+          /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
+          var gasESTFee
+            = 2
+            * parseInt(
+              await contractObj.methods
+                .transfer(config.revenueWallet.address, feeAmount)
+                .estimateGas({ gas: 450000 })
+            );
+          var gasEST
+            = 2
+            * parseInt(
+              await contractObj.methods
+                .transfer(toWallet.address, tokenAmount)
+                .estimateGas({ gas: 450000 })
+            );
+          console.log('gasESTFee', gasESTFee);
+          var totalGas = new BigNumber(gasEST + gasESTFee);
 
-//         console.log(`gasPrice - ${gasPrice}`);
+          var ethAmount = new BigNumber(
+            await web3.eth.getBalance(fromWallet.address)
+          );
+          var gasPrice = await web3.eth.getGasPrice();
 
-//         var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
-//         // console.log('remainingGas - ' + remainingGas);
-//         var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
-//         var totalETH = parseFloat(totalGas / Math.pow(10, 9));
+          console.log(`gasPrice - ${gasPrice}`);
 
-//         var giveETH = 0;
-//         var flag = false;
+          var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
+          // console.log('remainingGas - ' + remainingGas);
+          var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
+          var totalETH = parseFloat(totalGas / Math.pow(10, 9));
 
-//         if (remainingETH < totalETH) {
-//           // need to supply gas
-//           giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
+          var giveETH = 0;
+          var flag = false;
 
-//           flag = true;
-//         }
+          if(remainingETH < totalETH) {
+            // need to supply gas
+            giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 
-//         console.log(`giveETH - ${giveETH}`);
-//         /* Supply Gas End */
+            flag = true;
+          }
 
-//         /* Promise Start */
-//         payGasAsETH(fromWallet.address, giveETH, flag).then(
-//           async function (result) {
-//             var nonce = await web3.eth
-//               .getTransactionCount(fromWallet.address)
-//               .catch(error =>
-//                 res.status(400).send({
-//                   status: false,
-//                   msg: 'Error occurred in getting transaction count!'
-//                 })
-//               );
+          console.log(`giveETH - ${giveETH}`);
+          /* Supply Gas End */
 
-//             /* Send Fee */
-//             var txParamsFee = {
-//               nonce: web3.utils.toHex(nonce),
-//               gasPrice: web3.utils.toHex(gasPrice),
-//               gasLimit: gasESTFee,
-//               from: fromWallet.address,
-//               to: contractObj._address,
-//               value: '0x00',
-//               chainId: config.chainId,
-//               data: txDataFee
-//             };
+          /* Promise Start */
+          payGasAsETH(fromWallet.address, giveETH, flag).then(
+            async function(result) {
+              var nonce = await web3.eth
+                .getTransactionCount(fromWallet.address)
+                .catch(err => {
+                  console.log('Error occurred in getting transaction count!', err);
+                  return;
+                }
+                );
 
-//             var txFee = new Tx(txParamsFee);
-//             txFee.sign(privateKey);
+              /* Send Fee */
+              var txParamsFee = {
+                nonce: web3.utils.toHex(nonce),
+                gasPrice: web3.utils.toHex(gasPrice),
+                gasLimit: gasESTFee,
+                from: fromWallet.address,
+                to: contractObj._address,
+                value: '0x00',
+                chainId: config.chainId,
+                data: txDataFee
+              };
 
-//             var serializedTxFee = txFee.serialize();
+              var txFee = new Tx(txParamsFee);
+              txFee.sign(privateKey);
 
-//             web3.eth
-//               .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
-//               .on('transactionHash', hash => {
-//                 console.log('transactionHash', hash);
-//               })
-//               .on('recipet', recipet => {
-//                 console.log('recipet', recipet);
-//               })
-//               .on('error', err => {
-//                 console.log('sendSignedTransaction err', err);
-//               });
-//             /* Send Fee End */
+              var serializedTxFee = txFee.serialize();
 
-//             var txParams = {
-//               nonce: web3.utils.toHex(nonce + 1),
-//               gasPrice: web3.utils.toHex(gasPrice),
-//               gasLimit: gasEST,
-//               from: fromWallet.address,
-//               to: contractObj._address,
-//               value: '0x00',
-//               chainId: config.chainId,
-//               data: txData
-//             };
+              web3.eth
+                .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
+                .on('transactionHash', hash => {
+                  console.log('transactionHash for tx Fee', hash);
+                  return;
+                })
+                .on('recipet', recipet => {
+                  // update mongo here
+                  console.log('recipet for tx fee', recipet);
+                  return;
+                })
+                .on('error', err => {
+                  console.log('sendSignedTransaction for tx fee err', err);
+                  return;
+                });
+              /* Send Fee End */
 
-//             var tx = new Tx(txParams);
-//             tx.sign(privateKey);
+              var txParams = {
+                nonce: web3.utils.toHex(nonce + 1),
+                gasPrice: web3.utils.toHex(gasPrice),
+                gasLimit: gasEST,
+                from: fromWallet.address,
+                to: contractObj._address,
+                value: '0x00',
+                chainId: config.chainId,
+                data: txData
+              };
 
-//             var serializedTx = tx.serialize();
+              var tx = new Tx(txParams);
+              tx.sign(privateKey);
 
-//             var sent = false;
-//             web3.eth
-//               .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-//               .on('transactionHash', function (hash) {
-//                 var fromBalance
-//                   = parseFloat(balance) - parseFloat(totalAmount);
-//                 toBalance = parseFloat(toBalance) + parseFloat(amount);
+              var serializedTx = tx.serialize();
 
-//                 History.create({
-//                   from: fromWallet._id,
-//                   to: toWallet._id,
-//                   amount: tokenAmount,
-//                   hash,
-//                   action: 'spent'
-//                 })
-//                   .then(result =>
-//                     res.status(201).send({
-//                       status: true,
-//                       hash,
-//                       fromBalance,
-//                       toBalance
-//                     })
-//                   )
-//                   .catch(err => {
-//                     console.log('err', err);
-//                     return res.status(400).send({
-//                       status: false,
-//                       msg: 'Error occurred in saving history!'
-//                     });
-//                   });
-//               })
-//               .on('receipt', receipt => {
-//                 // we should persist these to keep a papertrail.
-//                 console.log('receipt', receipt);
-//               })
-//               .on('error', err => {
-//                 if (!sent) console.log('err', err);
-//                 console.log('err', err);
-//                 return res
-//                   .status(400)
-//                   .send({ status: false, msg: err.message });
-//               });
-//           },
-//           function (err) {
-//             console.log('err', err);
-//             return res.status(400).send({ status: false, msg: err.message });
-//           }
-//         );
-//         /* Promise End */
-//       })
-//       .catch(err => {
-//         console.log('err', err);
-//         res.status(400).send({ status: false, msg: err });
-//       });
-//   })
-//   .catch(err => {
-//     console.log('err', err);
-//     res.status(400).send({ status: false, msg: err });
-//   });
-// /* Check Balance End */
+              var sent = false;
+              web3.eth
+                .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
+                .on('transactionHash', function(hash) {
+                  var fromBalance
+                    = parseFloat(balance) - parseFloat(totalAmount);
+                  toBalance = parseFloat(toBalance) + parseFloat(amount);
+                  console.log('sendSignedTransaction success', fromWallet._id, toWallet._id, tokenAmount, hash, 'spent');
+                  entity.status = 'Accepted';
+                  entity.hash = hash;
+                  return updateTransaction(entity);
+
+                  // update mongo here
+                  // do this as Transaction
+                  // History.create({
+                  //   from: fromWallet._id,
+                  //   to: toWallet._id,
+                  //   amount: tokenAmount,
+                  //   hash,
+                  //   action: 'spent'
+                  // })
+                  //   .then(result =>
+                  //     res.status(201).send({
+                  //       status: true,
+                  //       hash,
+                  //       fromBalance,
+                  //       toBalance
+                  //     })
+                  //   )
+                  //   .catch(err => {
+                  //     console.log('err', err);
+                  //     return res.status(400).send({
+                  //       status: false,
+                  //       msg: 'Error occurred in saving history!'
+                  //     });
+                  //   });
+                })
+                .on('receipt', receipt => {
+                  console.log('receipt', receipt);
+                  return Receipt.create(recipet)
+                    .then(recipetResult => {
+                      entity.status = 'Complete';
+                      entity.receiptId = recipetResult._id;
+                      return updateTransaction(entity);
+                    });
+                  // we should persist these to keep a papertrail.
+                })
+                .on('error', err => {
+                  entity.status = 'Error';
+                  console.log('sendSignedTransaction err', err);
+                  // update mongo here
+                  return updateTransaction(entity);
+                  // return res
+                  //   .status(400)
+                  //   .send({ status: false, msg: err.message });
+                });
+            },
+            function(err) {
+              console.log('payGasAsETH err', err);
+              // return res.status(400).send({ status: false, msg: err.message });
+              return;
+            }
+          );
+          /* Promise End */
+        })
+        .catch(err => {
+          console.log('balanceOf to err', err);
+          // res.status(400).send({ status: false, msg: err });
+          return;
+        });
+    })
+    .catch(err => {
+      console.log('balanceOf from err', err);
+      // res.status(400).send({ status: false, msg: err });
+      return;
+    });
+  /* Check Balance End */
+}
+
+function payGasAsETH(toAddress, ethAmount, flag) {
+  return new Promise(async (resolve, reject) => {
+    if(!flag) resolve();
+    else {
+      var gasPrice = await web3.eth.getGasPrice();
+
+      var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
+      var privateKey = new Buffer(privateKeyStr, 'hex');
+
+      var nonce = await web3.eth
+        .getTransactionCount(config.networkWallet.address)
+        .catch(error => {
+          console.log('getTransactionCount error', error);
+          reject();
+        });
+
+      var txParams = {
+        nonce: web3.utils.toHex(nonce),
+        gasPrice: web3.utils.toHex(gasPrice),
+        gasLimit: web3.utils.toHex(400000),
+        from: config.networkWallet.address,
+        to: toAddress,
+        value: web3.utils.toHex(ethAmount),
+        chainId: config.chainId
+      };
+
+      var tx = new Tx(txParams);
+      tx.sign(privateKey);
+
+      var serializedTx = tx.serialize();
+
+      web3.eth
+        .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
+        .then(receipt => {
+          console.log('sendSignedTransaction receipt', receipt);
+          resolve();
+        })
+        .catch(err => {
+          console.log('sendSignedTransaction error', err);
+          Promise.reject(err);
+        });
+    }
+  });
+}

@@ -54,7 +54,8 @@ export default function seedDatabaseIfNeeded() {
           amount: 20000000000000000000,
           hash:
             '0x0420240d2f8e95a08814afd4175491a904279534655c69055e64bd4f2b15a1a9',
-          action: 'spent'
+          action: 'spent',
+          status: 'complete'
         },
         {
           _id: '5b1ac7ee94f5ab0013c0707b',
@@ -65,7 +66,8 @@ export default function seedDatabaseIfNeeded() {
           amount: 25000000000000000000,
           hash:
             '0xab06174456070c79ffdfcbe197b64895f97afe22ef8f0c2e13e4ffe7fe6c33a5',
-          action: 'spent'
+          action: 'spent',
+          status: 'complete'
         }
       )
         .then(() => console.log('[SEED] finished populating transactions'))
