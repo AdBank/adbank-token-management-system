@@ -4,14 +4,17 @@ import mongoose from 'mongoose';
 // var Schema = mongoose.Schema;
 import { registerEvents } from './transaction.events';
 
+// the only difference between this and ecigmedia mongo db
+// is the txId here is the _id on the ecig mongo db
+
 // Transaction Schema
 var TransactionSchema = new mongoose.Schema(
   {
-    account: {
+    txId: {
       type: String,
       required: true
     },
-    txId: {
+    account: {
       type: String,
       required: true
     },
@@ -38,6 +41,10 @@ var TransactionSchema = new mongoose.Schema(
     },
     receiptId: {
       type: String
+    },
+    status: {
+      type: String,
+      required: true
     }
   },
   { timestamps: true }
