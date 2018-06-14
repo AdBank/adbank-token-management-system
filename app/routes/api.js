@@ -27,13 +27,16 @@ module.exports = function(app) {
   );
   contractObj.options.from = app.contract.owner_address;
 
+  /* Gas Price For Fast & Safe Transaction */
+  gasPriceGlobal = new BigNumber(20000000000);
+
   // added for health check
   app.get('/', function(req, res) {
     return res.sendStatus(200);
   });
 
   /* Turn on system flag */
-  app.post('/system', function(req, res) {
+  app.post('/system', function(req, res){
     var key = '';
     if(req.headers['x-api-key']) key = req.headers['x-api-key'];
 
@@ -753,69 +756,20 @@ module.exports = function(app) {
     /* Check Balance End */
   });
 
-  function payGasAsETH(toAddress, ethAmount, flag) {
-    return new Promise(async (resolve, reject) => {
-      if(!flag) resolve();
-      else {
-        var gasPrice = await web3.eth.getGasPrice();
-
-        var privateKeyStr = stripHexPrefix(app.networkWallet.privateKey);
-        var privateKey = new Buffer(privateKeyStr, 'hex');
-
-        var nonce = await web3.eth
-          .getTransactionCount(app.networkWallet.address)
-          .catch(error => {
-            reject();
-          });
-
-        var txParams = {
-          nonce: web3.utils.toHex(nonce),
-          gasPrice: web3.utils.toHex(gasPrice),
-          gasLimit: web3.utils.toHex(400000),
-          from: app.networkWallet.address,
-          to: toAddress,
-          value: web3.utils.toHex(ethAmount),
-          chainId: app.chainId
-        };
-
-        var tx = new Tx(txParams);
-        tx.sign(privateKey);
-
-        var serializedTx = tx.serialize();
-
-        web3.eth
-          .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-          .then(function(receipt) {
-            resolve();
-          })
-          .catch(err => {
-            console.log('error', err);
-            Promise.reject(err);
-          });
-      }
-    });
-  }
-
   /* Transfer tokens from one wallet to another wallet */
   app.post('/transferTokensInternally', async function(req, res) {
     /* Auth Begin */
     var msg = checkAuth(req);
     if(msg != '') return res.send({ status: false, msg });
     /* Auth End */
-    //console.log('req.body', req.body);
-    if(
-      !req.body.fromWalletId
-      || !req.body.toWalletId
-      || !req.body.tokenAmount
-      || isNaN(req.body.tokenAmount)
-    ) {
+    
+    if(!req.body.fromWalletId || !req.body.toWalletId || !req.body.tokenAmount || isNaN(req.body.tokenAmount)){
       return res.send({ status: false, msg: 'Incorrect parameters!' });
     }
 
     /* ID Check */
     var fromWalletId = req.body.fromWalletId;
-    // validate fromWalletId is 12-byte ObjectId value
-    if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+    if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)){ // validate fromWalletId is 12-byte ObjectId value
       return res.send({ status: false, msg: 'Invalid wallet id!' });
     }
     /* ID Check End */
@@ -827,8 +781,7 @@ module.exports = function(app) {
 
     /* ID Check */
     var toWalletId = req.body.toWalletId;
-    // validate toWalletId is 12-byte ObjectId value
-    if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+    if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) { // validate toWalletId is 12-byte ObjectId value
       return res.send({ status: false, msg: 'Invalid wallet id!' });
     }
     /* ID Check End */
@@ -838,23 +791,19 @@ module.exports = function(app) {
     if(!toWallet) {
       return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
     }
-    // set the amount to be transfered as a floating point number
-    var amount = parseFloat(req.body.tokenAmount);
 
-    // verify the amount is greater that 0
-    if(amount == 0) {
-      return res.send({
-        status: false,
-        msg: 'Token amount shouldn\'t be equal to 0!'
-      });
+    var amount = parseFloat(req.body.tokenAmount); // set the amount to be transfered as a floating point number
+
+    if(amount <= 0) { // verify the amount is greater than 0
+      return res.send({ status: false, msg: 'Token amount shouldn\'t be less than 0!' });
     }
 
-    // set floating point number to 2 decimal places
-    amount = parseFloat(amount.toFixed(2));
+    amount = parseFloat(amount.toFixed(2)); // set floating point number to 2 decimal places
+
     // calculate fee based
     var fee = parseFloat(amount * app.percent / 100); // Fee to Revenue Wallet
-    // trim fee to two decimal places
-    fee = parseFloat(fee.toFixed(2));
+    fee = parseFloat(fee.toFixed(2)); // trim fee to two decimal places
+
     //calculate total amount to be transfered
     var totalAmount = parseFloat(amount) + parseFloat(fee);
 
@@ -863,16 +812,16 @@ module.exports = function(app) {
       .balanceOf(fromWallet.address)
       .call({ from: app.contract.owner_address })
       .then(async result => {
-        // console.log('result', result);
         var balance = result / Math.pow(10, app.contract.decimals);
+        
         // check if balance is 0
-        // console.log('balance', balance);
         if(balance === 0) {
           console.log('err', 'Nothing to transfer!');
           return res
             .status(400)
             .send({ status: false, msg: 'Nothing to transfer!' });
         }
+
         // check if totalAmount is greater than balance and reject if true
         if(totalAmount > balance) {
           console.log('err', 'Insufficient balance!');
@@ -887,10 +836,10 @@ module.exports = function(app) {
           .then(async function(result) {
             var toBalance = result / Math.pow(10, app.contract.decimals);
 
-            var tokenAmount = new BigNumber(
+            tokenAmount = new BigNumber(
               (amount * Math.pow(10, app.contract.decimals)).toString()
             );
-            var feeAmount = new BigNumber(
+            feeAmount = new BigNumber(
               (fee * Math.pow(10, app.contract.decimals)).toString()
             );
 
@@ -899,65 +848,54 @@ module.exports = function(app) {
             );
             var privateKey = new Buffer(privateKeyStr, 'hex');
 
-            /* Supply Gas */
             var txDataFee = contractObj.methods
               .transfer(app.revenueWallet.address, feeAmount)
               .encodeABI();
             var txData = contractObj.methods
               .transfer(toWallet.address, tokenAmount)
               .encodeABI();
-            console.log(
-              'toWallet.address, tokenAmount',
-              toWallet.address,
-              tokenAmount
-            );
-            /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
+
+            console.log('Fee Token Amount, Payment Token Amount', feeAmount, tokenAmount);
+            
+            /* Estimate gas */
             var gasESTFee
-              = 2
-              * parseInt(
-                await contractObj.methods
+              = 2*
+                parseInt(
+                  await contractObj.methods
                   .transfer(app.revenueWallet.address, feeAmount)
                   .estimateGas({ gas: 450000 })
-              );
-            console.log(
-              'toWallet.address, tokenAmount',
-              toWallet.address,
-              tokenAmount
-            );
+                );
             var gasEST
-              = 2
-              * parseInt(
-                await contractObj.methods
+              = 2*
+                parseInt(
+                  await contractObj.methods
                   .transfer(toWallet.address, tokenAmount)
                   .estimateGas({ gas: 450000 })
-              );
-            console.log('gasESTFee', gasESTFee);
-            var totalGas = new BigNumber(gasEST + gasESTFee);
+                );
 
-            var ethAmount = new BigNumber(
+            totalGas = new BigNumber(gasEST + gasESTFee);
+            console.log('Fee Gas EST + Payment Gas EST = Total Gas EST', gasESTFee, gasEST, totalGas);
+            
+            gasPrice = new BigNumber(gasPriceGlobal);
+            //var gasPrice = await web3.eth.getGasPrice();
+
+            totalETH = new BigNumber(totalGas.times(gasPrice));
+            console.log('Total ETH Estimated - ' + totalETH);
+
+            ethAmount = new BigNumber(
               await web3.eth.getBalance(fromWallet.address)
             );
-            var gasPrice = await web3.eth.getGasPrice();
-
-            console.log(`gasPrice - ${gasPrice}`);
-
-            var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
-            // console.log('remainingGas - ' + remainingGas);
-            var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
-            var totalETH = parseFloat(totalGas / Math.pow(10, 9));
-
+            console.log('Current ETH - ' + ethAmount);
+            
             var giveETH = 0;
             var flag = false;
 
-            if(remainingETH < totalETH) {
-              // need to supply gas
-              giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
-
+            if(totalETH.isGreaterThan(ethAmount)){
               flag = true;
+              giveETH = new BigNumber(totalETH.minus(ethAmount));
             }
 
-            console.log(`giveETH - ${giveETH}`);
-            /* Supply Gas End */
+            console.log('Give ETH - ' + giveETH);
 
             /* Promise Start */
             payGasAsETH(fromWallet.address, giveETH, flag).then(
@@ -1076,6 +1014,75 @@ module.exports = function(app) {
       });
     /* Check Balance End */
   });
+  
+  /* Transfer tokens from contract to internal wallet - only used for Ropsten */
+  app.post('/transferTokens', async function(req, res){
+    var msg = checkAuth(req);
+    if(msg != '')
+      return res.send({status: false, msg: msg});
+    
+    if(!req.body.walletId || !req.body.tokenAmount || isNaN(req.body.tokenAmount))
+      return res.send({status: false, msg: 'Parameters are missing!'});
+    
+    var walletId = req.body.walletId;
+    if (!walletId.match(/^[0-9a-fA-F]{24}$/))
+      return res.send({status: false, msg: 'Invalid wallet id!'});
+
+    var wallet = await Wallet.findOne({_id: walletId});
+
+    if(!wallet)
+      return res.send({status: false, msg: 'Wallet doesn\'t exist!'});
+
+    var tokenAmount = new BigNumber((req.body.tokenAmount * Math.pow(10, app.contract.decimals)).toString());
+    var gasPrice = await web3.eth.getGasPrice();
+
+    var privateKeyStr = stripHexPrefix('f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307');
+    var privateKey = new Buffer(privateKeyStr, 'hex');
+    
+    var txData = contractObj.methods.transfer(wallet.address, tokenAmount).encodeABI();
+
+    var nonce = await web3.eth.getTransactionCount(app.contract.owner_address).catch((error) => {
+      return res.send({status: false, msg: 'Error occurred in getting transaction count!'});
+    });
+      
+    var txParams = {
+        nonce: web3.utils.toHex(nonce),
+        gasPrice: web3.utils.toHex(gasPrice),
+        gasLimit: web3.utils.toHex(400000),
+        from: app.contract.owner_address,
+        to: contractObj._address,
+        value: '0x00',
+        chainId: app.chainId,
+        data: txData
+    };
+
+    var tx = new Tx(txParams);
+    tx.sign(privateKey);
+          
+    var serializedTx = tx.serialize();
+          
+    var sent = false;
+    web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
+    .on('transactionHash', function(hash){
+      History.create({
+        from: app.contract.owner_address,
+        to: wallet._id,
+        amount: tokenAmount,
+        hash: hash,
+        action: 'import'
+      }, async function(err, history){
+        sent = true;
+
+        if(err)
+          return res.send({status: false, msg: 'Error occurred in saving history!'});
+
+        return res.send({status: true, hash: hash, balance: req.body.tokenAmount});
+      });
+    }).on('error', function(err){
+      if(!sent)
+        return res.send({status: false, msg: err.message});
+    });
+  });
 
   /* Get history of wallet by wallet ID */
   app.post('/history', async function(req, res) {
@@ -1105,5 +1112,49 @@ module.exports = function(app) {
     if(!flag) return 'System is turned off!';
 
     return '';
+  }
+
+  function payGasAsETH(toAddress, ethAmount, flag) {
+    return new Promise(async (resolve, reject) => {
+      if(!flag) resolve();
+      else {
+        gasPrice = new BigNumber(gasPriceGlobal);
+        //var gasPrice = await web3.eth.getGasPrice();
+
+        var privateKeyStr = stripHexPrefix(app.networkWallet.privateKey);
+        var privateKey = new Buffer(privateKeyStr, 'hex');
+
+        var nonce = await web3.eth
+          .getTransactionCount(app.networkWallet.address)
+          .catch(error => {
+            reject();
+          });
+
+        var txParams = {
+          nonce: web3.utils.toHex(nonce),
+          gasPrice: web3.utils.toHex(gasPrice),
+          gasLimit: web3.utils.toHex(450000),
+          from: app.networkWallet.address,
+          to: toAddress,
+          value: web3.utils.toHex(ethAmount),
+          chainId: app.chainId
+        };
+
+        var tx = new Tx(txParams);
+        tx.sign(privateKey);
+
+        var serializedTx = tx.serialize();
+
+        web3.eth
+          .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
+          .then(function(receipt) {
+            resolve();
+          })
+          .catch(err => {
+            console.log('error', err);
+            Promise.reject(err);
+          });
+      }
+    });
   }
 };

@@ -19,27 +19,25 @@ module.exports = {
       provider: '/Projects/adbank-token-network-production/devnet/geth.ipc' // Network IPC Provider
     },
     rpc: {
-      provider: 'https://mainnet.infura.io/4j5O9eS3JbK1oetIOMTq'
+      provider: 'https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq'
     }
   },
   contract: {
     abi: 'abi.json', // Contract ABI
-    //owner_address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Contract Owner Address
-    owner_address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
-    //address: '0x69c215f4d9940948c257ad45a28032b4b3d5cafd', // Address where contract is deployed
-    address: '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
+    owner_address: '0xf3399d84571fac96eed37cd4b50baee807b67360',
+    address: '0x69c215f4d9940948c257ad45a28032b4b3d5cafd',
     decimals: 18 // Token decimals
   },
   networkWallet: {
     // Gas Holder
     address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
-    privateKey: '' // Network Wallet Private Key
+    privateKey: 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet Private Key
   },
   revenueWallet: {
     address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to get fee from interal wallet
   },
   //chainId: 1337, // Network Chain ID,
-  chainId: 1,
+  chainId: 3,
   key: '&6831IlYmK33d', // Security Key
   percent: 25 // Fee Percentage
 };
