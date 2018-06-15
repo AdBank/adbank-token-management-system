@@ -252,10 +252,10 @@ async function handleTransaction(entity) {
           var toBalance
             = balanceResult / Math.pow(10, config.contract.decimals);
 
-          tokenAmount = new BigNumber(
+          var tokenAmount = new BigNumber(
             (amount * Math.pow(10, config.contract.decimals)).toString()
           );
-          feeAmount = new BigNumber(
+          var feeAmount = new BigNumber(
             (fee * Math.pow(10, config.contract.decimals)).toString()
           );
 
@@ -295,17 +295,17 @@ async function handleTransaction(entity) {
 
           /* Calculate ideal gas */
           var gasPriceWeb3 = await web3.eth.getGasPrice();
-          gasPrice = new BigNumber(gasPriceGlobal);
+          var gasPrice = new BigNumber(gasPriceGlobal);
 
           if(gasPrice.isLessThan(gasPriceWeb3)){
             gasPrice = gasPriceWeb3;
           }
           /* Calculate ideal gas end */
 
-          totalETH = new BigNumber(totalGas.times(gasPrice));
+          var totalETH = new BigNumber(totalGas.times(gasPrice));
           console.log('Total ETH Estimated - ' + totalETH);
 
-          ethAmount = new BigNumber(
+          var ethAmount = new BigNumber(
             await web3.eth.getBalance(fromWallet.address)
           );
           console.log('Current ETH - ' + ethAmount);
@@ -475,7 +475,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
     else {
       /* Calculate ideal gas */
       var gasPriceWeb3 = await web3.eth.getGasPrice();
-      gasPrice = new BigNumber(gasPriceGlobal);
+      var gasPrice = new BigNumber(gasPriceGlobal);
 
       if(gasPrice.isLessThan(gasPriceWeb3)){
         gasPrice = gasPriceWeb3;
