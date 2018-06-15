@@ -297,8 +297,9 @@ async function handleTransaction(entity) {
           var gasPriceWeb3 = await web3.eth.getGasPrice();
           gasPrice = new BigNumber(gasPriceGlobal);
 
-          if(gasPrice.isLessThan(gasPriceWeb3))
+          if(gasPrice.isLessThan(gasPriceWeb3)){
             gasPrice = gasPriceWeb3;
+          }
           /* Calculate ideal gas end */
 
           totalETH = new BigNumber(totalGas.times(gasPrice));
@@ -476,8 +477,9 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       var gasPriceWeb3 = await web3.eth.getGasPrice();
       gasPrice = new BigNumber(gasPriceGlobal);
 
-      if(gasPrice.isLessThan(gasPriceWeb3))
+      if(gasPrice.isLessThan(gasPriceWeb3)){
         gasPrice = gasPriceWeb3;
+      }
       /* Calculate ideal gas end */
 
       var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
