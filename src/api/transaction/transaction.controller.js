@@ -30,13 +30,12 @@ BigNumber.config({ ERRORS: false });
 var flag = true; // System flag
 
 var cryptr = new Cryptr('AdBankTokenNetwork');
-var client = new net.Socket();
 
 /* Web3 Initialization */
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 
 /* Gas Price For Fast & Safe Transaction */
-gasPriceGlobal = new BigNumber(20000000000);
+var gasPriceGlobal = new BigNumber(20000000000);
 
 /* Contract Initialization */
 var contractObj = new web3.eth.Contract(
