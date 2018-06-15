@@ -35,6 +35,9 @@ var client = new net.Socket();
 /* Web3 Initialization */
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 
+/* Gas Price For Fast & Safe Transaction */
+gasPriceGlobal = new BigNumber(20000000000);
+
 /* Contract Initialization */
 var contractObj = new web3.eth.Contract(
   JSON.parse(abi),
@@ -173,12 +176,14 @@ async function handleTransaction(entity) {
   // validate fromWalletId is 12-byte ObjectId value
   if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
     console.log('Invalid wallet id!');
+    return;
   }
   /* ID Check End */
 
   let fromWallet = await Wallet.findOne({ _id: fromWalletId });
   if(!fromWallet) {
     console.log('Wallet doesn\'t exist!');
+    return;
   }
 
   /* ID Check */
@@ -186,6 +191,7 @@ async function handleTransaction(entity) {
   // validate toWalletId is 12-byte ObjectId value
   if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
     console.log('Invalid wallet id!');
+    return;
   }
   /* ID Check End */
 
@@ -193,17 +199,20 @@ async function handleTransaction(entity) {
   let toWallet = await Wallet.findOne({ _id: toWalletId });
   if(!toWallet) {
     console.log('Wallet doesn\'t exist!');
+    return;
   }
   // set the amount to be transfered as a floating point number
   let amount = parseFloat(entity.amount);
 
-  // verify the amount is greater that 0
-  if(amount == 0) {
+  // verify the amount is greater than 0
+  if(amount <= 0) {
     console.log('Token amount shouldn\'t be equal to 0!');
+    return;
   }
 
   // set floating point number to 2 decimal places
   amount = parseFloat(amount.toFixed(2));
+
   // calculate fee based
   var fee = parseFloat(amount * config.percent / 100); // Fee to Revenue Wallet
   // trim fee to two decimal places
@@ -243,10 +252,10 @@ async function handleTransaction(entity) {
           var toBalance
             = balanceResult / Math.pow(10, config.contract.decimals);
 
-          var tokenAmount = new BigNumber(
+          tokenAmount = new BigNumber(
             (amount * Math.pow(10, config.contract.decimals)).toString()
           );
-          var feeAmount = new BigNumber(
+          feeAmount = new BigNumber(
             (fee * Math.pow(10, config.contract.decimals)).toString()
           );
 
@@ -262,6 +271,9 @@ async function handleTransaction(entity) {
           var txData = contractObj.methods
             .transfer(toWallet.address, tokenAmount)
             .encodeABI();
+
+          console.log('Fee Token Amount, Payment Token Amount', feeAmount, tokenAmount);
+
           /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
           var gasESTFee
             = 2
@@ -277,32 +289,35 @@ async function handleTransaction(entity) {
                 .transfer(toWallet.address, tokenAmount)
                 .estimateGas({ gas: 450000 })
             );
-          console.log('gasESTFee', gasESTFee);
+          
           var totalGas = new BigNumber(gasEST + gasESTFee);
+          console.log('Fee Gas EST + Payment Gas EST = Total Gas EST', gasESTFee, gasEST, totalGas);
 
-          var ethAmount = new BigNumber(
+          /* Calculate ideal gas */
+          var gasPriceWeb3 = await web3.eth.getGasPrice();
+          gasPrice = new BigNumber(gasPriceGlobal);
+
+          if(gasPrice.isLessThan(gasPriceWeb3))
+            gasPrice = gasPriceWeb3;
+          /* Calculate ideal gas end */
+
+          totalETH = new BigNumber(totalGas.times(gasPrice));
+          console.log('Total ETH Estimated - ' + totalETH);
+
+          ethAmount = new BigNumber(
             await web3.eth.getBalance(fromWallet.address)
           );
-          var gasPrice = await web3.eth.getGasPrice();
-
-          console.log(`gasPrice - ${gasPrice}`);
-
-          var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
-          // console.log('remainingGas - ' + remainingGas);
-          var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
-          var totalETH = parseFloat(totalGas / Math.pow(10, 9));
+          console.log('Current ETH - ' + ethAmount);
 
           var giveETH = 0;
           var flag = false;
 
-          if(remainingETH < totalETH) {
-            // need to supply gas
-            giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
-
+          if(totalETH.isGreaterThan(ethAmount)){
             flag = true;
+            giveETH = new BigNumber(totalETH.minus(ethAmount));
           }
 
-          console.log(`giveETH - ${giveETH}`);
+          console.log('Give ETH - ' + giveETH);
           /* Supply Gas End */
 
           /* Promise Start */
@@ -457,7 +472,13 @@ function payGasAsETH(toAddress, ethAmount, flag) {
   return new Promise(async (resolve, reject) => {
     if(!flag) resolve();
     else {
-      var gasPrice = await web3.eth.getGasPrice();
+      /* Calculate ideal gas */
+      var gasPriceWeb3 = await web3.eth.getGasPrice();
+      gasPrice = new BigNumber(gasPriceGlobal);
+
+      if(gasPrice.isLessThan(gasPriceWeb3))
+        gasPrice = gasPriceWeb3;
+      /* Calculate ideal gas end */
 
       var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       var privateKey = new Buffer(privateKeyStr, 'hex');
@@ -472,7 +493,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       var txParams = {
         nonce: web3.utils.toHex(nonce),
         gasPrice: web3.utils.toHex(gasPrice),
-        gasLimit: web3.utils.toHex(400000),
+        gasLimit: web3.utils.toHex(450000),
         from: config.networkWallet.address,
         to: toAddress,
         value: web3.utils.toHex(ethAmount),
