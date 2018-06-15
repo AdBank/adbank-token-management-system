@@ -29,16 +29,16 @@ var contractObj = new web3.eth.Contract(abi, config.contract.address);
 contractObj.options.from = config.contract.ownerAddress;
 let importedWallets = [];
 
-function checkAuth(req) {
-  var key = '';
-  if(req.headers['x-api-key']) key = req.headers['x-api-key'];
+// function checkAuth(req) {
+//   var key = '';
+//   if(req.headers['x-api-key']) key = req.headers['x-api-key'];
 
-  if(key != config.key) return 'You are not authorized!';
+//   if(key != config.key) return 'You are not authorized!';
 
-  if(!flag) return 'System is turned off!';
+//   if(!flag) return 'System is turned off!';
 
-  return '';
-}
+//   return '';
+// }
 
 function handleWalletByOffset(index, items) {
   return new Promise((resolve, reject) => {
@@ -152,12 +152,12 @@ export async function index(req, res) {
 }
 
 export async function system(req, res) {
-  var key = '';
-  if(req.headers['x-api-key']) key = req.headers['x-api-key'];
+  // var key = '';
+  // if(req.headers['x-api-key']) key = req.headers['x-api-key'];
 
-  if(key != config.key) {
-    return res.send({ status: false, msg: 'You are not authorised!' });
-  }
+  // if(key != config.key) {
+  //   return res.send({ status: false, msg: 'You are not authorised!' });
+  // }
 
   if(!req.body.action) {
     return res.send({ status: false, msg: 'Undefined action!' });
@@ -178,10 +178,10 @@ export async function system(req, res) {
   }
 }
 export async function ownerTokenBalance(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
   contractObj.methods
     .balanceOf(config.contract.ownerAddress)
@@ -194,10 +194,10 @@ export async function ownerTokenBalance(req, res) {
     .catch(err => res.status(400).send({ status: false, msg: err }));
 }
 export async function holderTokenBalance(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
   if(!req.body.address) {
     return res.send({ status: false, msg: 'Address is missing!' });
@@ -219,42 +219,43 @@ export async function holderTokenBalance(req, res) {
     })
     .catch(err => res.status(400).send({ status: false, msg: err }));
 }
-// export async function walletTokenBalance(req, res) {
-//   /* Auth Begin */
-//   var msg = checkAuth(req);
-//   if(msg != '') return res.send({ status: false, msg });
-//   /* Auth End */
+export async function walletTokenBalance(req, res) {
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
-//   if(!req.body.walletId) {
-//     return res.send({ status: false, msg: 'Wallet ID is missing!' });
-//   }
+  if(!req.body.walletId) {
+    return res.send({ status: false, msg: 'Wallet ID is missing!' });
+  }
 
-//   var walletId = req.body.walletId;
-//   if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
-//     return res.send({ status: false, msg: 'Invalid wallet id!' });
-//   }
+  var walletId = req.body.walletId;
+  if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
+    return res.send({ status: false, msg: 'Invalid wallet id!' });
+  }
 
-//   var wallet = await Wallet.findOne({ _id: walletId });
+  var wallet = await Wallet.findOne({ _id: walletId });
 
-//   if(!wallet) {
-//     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
-//   }
+  if(!wallet) {
+    return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+  }
 
-//   contractObj.methods
-//     .balanceOf(wallet.address)
-//     .call({ from: config.contract.ownerAddress })
-//     .then(result => {
-//       var balance = result / Math.pow(10, config.contract.decimals);
+  contractObj.methods
+    .balanceOf(wallet.address)
+    .call({ from: config.contract.ownerAddress })
+    .then(result => {
+      var balance = result / Math.pow(10, config.contract.decimals);
 
-//       return res.status(200).send({ status: true, balance });
-//     })
-//     .catch(err => res.status(400).send({ status: false, msg: err }));
-// }
+      return res.status(200).send({ status: true, balance });
+    })
+    .catch(err => res.status(400).send({ status: false, msg: err }));
+}
+
 export async function wallet(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
   if(!req.body.userId) {
     return res.send({ status: false, msg: 'User is missing!' });
@@ -303,10 +304,10 @@ export async function wallet(req, res) {
   );
 }
 export async function withdraw(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
   if(!req.body.address || !req.body.walletId) {
     return res.send({ status: false, msg: 'Parameters are missing!' });
@@ -472,10 +473,10 @@ export async function withdraw(req, res) {
     .catch(err => res.status(400).send({ status: false, msg: err }));
 }
 export async function batchWallet(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
   if(!req.body.users) {
     return res.send({ status: false, msg: 'Users are missing!' });
@@ -791,10 +792,10 @@ export async function batchRequest(req, res) {
   /* Check Balance End */
 }
 export async function transferTokensInternally(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
   //console.log('req.body', req.body);
   if(
     !req.body.fromWalletId
@@ -1072,10 +1073,10 @@ export async function transferTokensInternally(req, res) {
   /* Check Balance End */
 }
 export async function history(req, res) {
-  /* Auth Begin */
-  var msg = checkAuth(req);
-  if(msg != '') return res.send({ status: false, msg });
-  /* Auth End */
+  // /* Auth Begin */
+  // var msg = checkAuth(req);
+  // if(msg != '') return res.send({ status: false, msg });
+  // /* Auth End */
 
   if(!req.body.walletId) {
     return res.send({ status: false, msg: 'Wallet is missing!' });

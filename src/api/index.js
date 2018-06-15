@@ -2,21 +2,37 @@
 
 import { Router } from 'express';
 import * as controller from './api.controller';
-// import * as auth from '../../auth/auth.service';
+import * as auth from '../auth/auth.service';
 
 var router = Router();
 
 router.get('/', controller.index);
 
-module.exports = router;
+router.post('/system', auth.isAuthenticated(), controller.system);
+router.post(
+  '/ownerTokenBalance',
+  auth.isAuthenticated(),
+  controller.ownerTokenBalance
+);
+router.post(
+  '/holderTokenBalance',
+  auth.isAuthenticated(),
+  controller.holderTokenBalance
+);
+router.post(
+  '/walletTokenBalance',
+  auth.isAuthenticated(),
+  controller.walletTokenBalance
+);
+router.post('/wallet', auth.isAuthenticated(), controller.wallet);
+router.post('/withdraw', auth.isAuthenticated(), controller.withdraw);
+router.post('/batchWallet', auth.isAuthenticated(), controller.batchWallet);
+router.post('/batchRequest', auth.isAuthenticated(), controller.batchRequest);
+router.post(
+  '/transferTokensInternally',
+  auth.isAuthenticated(),
+  controller.transferTokensInternally
+);
+router.post('/history', auth.isAuthenticated(), controller.history);
 
-// // router.post('/system', controller.system);
-// // router.post('/ownerTokenBalance', controller.ownerTokenBalance);
-// // router.post('/holderTokenBalance', controller.holderTokenBalance);
-// // router.post('/walletTokenBalance', controller.walletTokenBalance);
-// // router.post('/wallet', controller.wallet);
-// // router.post('/withdraw', controller.withdraw);
-// // router.post('/batchWallet', controller.batchWallet);
-// // router.post('/batchRequest', controller.batchRequest);
-// // router.post('/transferTokensInternally', controller.transferTokensInternally);
-// // router.post('/history', controller.history);
+module.exports = router;

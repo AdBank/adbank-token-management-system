@@ -40,4 +40,5 @@ function removeListener(event, listener) {
   };
 }
 
+// turn on the socket here
 register();

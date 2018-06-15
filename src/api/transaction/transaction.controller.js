@@ -36,10 +36,12 @@ var client = new net.Socket();
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 
 /* Contract Initialization */
-var contractObj = new web3.eth.Contract(JSON.parse(abi), config.contract.address);
+var contractObj = new web3.eth.Contract(
+  JSON.parse(abi),
+  config.contract.address
+);
 contractObj.options.from = config.contract.ownerAddress;
 let importedWallets = [];
-
 
 function updateTransaction(data) {
   let id = data._id;
@@ -65,14 +67,19 @@ function updateTransaction(data) {
   // delete _data.createdAt;
   console.log('updateTransaction', data);
   // console.log('data', data);
-  Transaction.findOneAndUpdate({ _id: id }, _data, { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }).exec()
+  Transaction.findOneAndUpdate({ _id: id }, _data, {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true,
+    runValidators: true
+  })
+    .exec()
     .then(result => {
       console.log('Transaction updated result', result);
       return result.save();
     })
     .catch(err => console.log('update tx err', err));
 }
-
 
 function respondWithResult(res, statusCode, action) {
   statusCode = statusCode || 200;
@@ -123,13 +130,42 @@ export async function create(req, res) {
     from: req.body.from,
     to: req.body.to,
     amount: req.body.amount,
-    action: 'spent',
-    status: 'processing',
+    action: 'Spent',
+    status: 'Processing'
   })
     .then(respondWithResult(res, 201, 'create'))
     .catch(handleError(res));
 }
 
+// req.body { address: '0xf3399d84571fac96eed37cd4b50baee807b67360',
+//   walletId: '5b17f7a059ca190014773f8c',
+//   tokenAmount: '30' }
+
+export async function withdraw(req, res) {
+  console.log('req.body', req.body);
+  if(
+    !req.body.account
+    || !req.body.address
+    || !req.body.walletId
+    || !req.body.amount
+    || isNaN(req.body.amount)
+  ) {
+    // 422 means invalid data
+    return res.sendStatus(422);
+  }
+
+  return Transaction.create({
+    account: req.body.account,
+    txId: req.body.txId,
+    from: req.body.from,
+    to: req.body.to,
+    amount: req.body.amount,
+    action: 'Export',
+    status: 'Processing'
+  })
+    .then(respondWithResult(res, 201, 'create'))
+    .catch(handleError(res));
+}
 
 async function handleTransaction(entity) {
   /* ID Check */
@@ -182,7 +218,12 @@ async function handleTransaction(entity) {
     .then(async result => {
       // console.log('result', result);
       var balance = result / Math.pow(10, config.contract.decimals);
-      console.log('balance', balance, fromWallet.address, config.contract.ownerAddress);
+      console.log(
+        'balance',
+        balance,
+        fromWallet.address,
+        config.contract.ownerAddress
+      );
       // check if balance is 0
       if(balance === 0) {
         console.log('err', 'Nothing to transfer!');
@@ -199,7 +240,8 @@ async function handleTransaction(entity) {
         .balanceOf(toWallet.address)
         .call({ from: config.contract.ownerAddress })
         .then(async function(balanceResult) {
-          var toBalance = balanceResult / Math.pow(10, config.contract.decimals);
+          var toBalance
+            = balanceResult / Math.pow(10, config.contract.decimals);
 
           var tokenAmount = new BigNumber(
             (amount * Math.pow(10, config.contract.decimals)).toString()
@@ -269,10 +311,12 @@ async function handleTransaction(entity) {
               var nonce = await web3.eth
                 .getTransactionCount(fromWallet.address)
                 .catch(err => {
-                  console.log('Error occurred in getting transaction count!', err);
+                  console.log(
+                    'Error occurred in getting transaction count!',
+                    err
+                  );
                   return;
-                }
-                );
+                });
 
               /* Send Fee */
               var txParamsFee = {
@@ -331,8 +375,15 @@ async function handleTransaction(entity) {
                   var fromBalance
                     = parseFloat(balance) - parseFloat(totalAmount);
                   toBalance = parseFloat(toBalance) + parseFloat(amount);
-                  console.log('sendSignedTransaction success', fromWallet._id, toWallet._id, tokenAmount, hash, 'spent');
-                  entity.status = 'Accepted';
+                  console.log(
+                    'sendSignedTransaction success',
+                    fromWallet._id,
+                    toWallet._id,
+                    tokenAmount,
+                    hash,
+                    'spent'
+                  );
+                  entity.status = 'Pending';
                   entity.hash = hash;
                   return updateTransaction(entity);
 
@@ -363,12 +414,11 @@ async function handleTransaction(entity) {
                 })
                 .on('receipt', receipt => {
                   console.log('receipt', receipt);
-                  return Receipt.create(recipet)
-                    .then(recipetResult => {
-                      entity.status = 'Complete';
-                      entity.receiptId = recipetResult._id;
-                      return updateTransaction(entity);
-                    });
+                  Receipt.create(receipt).then(recipetResult => {
+                    entity.status = 'Complete';
+                    entity.receiptId = recipetResult._id;
+                    return updateTransaction(entity);
+                  });
                   // we should persist these to keep a papertrail.
                 })
                 .on('error', err => {
@@ -438,7 +488,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
         .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
         .then(receipt => {
           console.log('sendSignedTransaction receipt', receipt);
-          resolve();
+          Promise.resolve();
         })
         .catch(err => {
           console.log('sendSignedTransaction error', err);

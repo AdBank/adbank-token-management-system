@@ -50,12 +50,8 @@ describe('Transaction API:', () => {
   // Clear transactions before testing
   before(() =>
     Transaction.remove()
-      .then(() => {
-        // transaction = new Transaction({});
-        // return transaction.save();
-        return;
-      })
       .then(Wallet.remove())
+      .then(() => genWallet())
       .catch(err => console.log('before err', err))
   );
 
