@@ -51,7 +51,8 @@ module.exports = {
   key: process.env.KEY || '&6831IlYmK33d', // Security Key
   percent: 25, // Fee Percentage
   nats: {
-    servers: [
+    servers: process.env.NATS_SERVERS || [
+      'nats://adbank-nats-cluster-1.adbank-nats-cluster-mgmt.nats-io.svc:4222',
       'nats://adbank-nats-cluster-2.adbank-nats-cluster-mgmt.nats-io.svc:4222',
       'nats://adbank-nats-cluster-3.adbank-nats-cluster-mgmt.nats-io.svc:4222'
     ]
