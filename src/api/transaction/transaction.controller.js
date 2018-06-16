@@ -21,9 +21,6 @@ import fs from 'fs';
 var appRoot = process.cwd();
 let abi = fs.readFileSync(`${appRoot}/abi.json`);
 
-import NATS from 'nats';
-const nats = NATS.connect({ servers: config.nats.servers, json: true });
-
 BigNumber.config({ ERRORS: false });
 
 // this is always going to be te same no need to drag it through envVars
@@ -271,7 +268,11 @@ async function handleTransaction(entity) {
             .transfer(toWallet.address, tokenAmount)
             .encodeABI();
 
-          console.log('Fee Token Amount, Payment Token Amount', feeAmount, tokenAmount);
+          console.log(
+            'Fee Token Amount, Payment Token Amount',
+            feeAmount,
+            tokenAmount
+          );
 
           /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
           var gasESTFee
@@ -288,36 +289,41 @@ async function handleTransaction(entity) {
                 .transfer(toWallet.address, tokenAmount)
                 .estimateGas({ gas: 450000 })
             );
-          
+
           var totalGas = new BigNumber(gasEST + gasESTFee);
-          console.log('Fee Gas EST + Payment Gas EST = Total Gas EST', gasESTFee, gasEST, totalGas);
+          console.log(
+            'Fee Gas EST + Payment Gas EST = Total Gas EST',
+            gasESTFee,
+            gasEST,
+            totalGas
+          );
 
           /* Calculate ideal gas */
           var gasPriceWeb3 = await web3.eth.getGasPrice();
           var gasPrice = new BigNumber(gasPriceGlobal);
 
-          if(gasPrice.isLessThan(gasPriceWeb3)){
+          if(gasPrice.isLessThan(gasPriceWeb3)) {
             gasPrice = gasPriceWeb3;
           }
           /* Calculate ideal gas end */
 
           var totalETH = new BigNumber(totalGas.times(gasPrice));
-          console.log('Total ETH Estimated - ' + totalETH);
+          console.log(`Total ETH Estimated - ${  totalETH}`);
 
           var ethAmount = new BigNumber(
             await web3.eth.getBalance(fromWallet.address)
           );
-          console.log('Current ETH - ' + ethAmount);
+          console.log(`Current ETH - ${  ethAmount}`);
 
           var giveETH = 0;
           var flag = false;
 
-          if(totalETH.isGreaterThan(ethAmount)){
+          if(totalETH.isGreaterThan(ethAmount)) {
             flag = true;
             giveETH = new BigNumber(totalETH.minus(ethAmount));
           }
 
-          console.log('Give ETH - ' + giveETH);
+          console.log(`Give ETH - ${  giveETH}`);
           /* Supply Gas End */
 
           /* Promise Start */
@@ -476,7 +482,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       var gasPriceWeb3 = await web3.eth.getGasPrice();
       var gasPrice = new BigNumber(gasPriceGlobal);
 
-      if(gasPrice.isLessThan(gasPriceWeb3)){
+      if(gasPrice.isLessThan(gasPriceWeb3)) {
         gasPrice = gasPriceWeb3;
       }
       /* Calculate ideal gas end */

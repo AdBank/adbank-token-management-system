@@ -34,7 +34,8 @@ module.exports = {
   networkWallet: {
     // Gas Holder
     address: '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
-    privateKey: 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet Private Key
+    privateKey:
+      'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet Private Key
   },
   revenueWallet: {
     address: '0xf3399d84571fac96eed37cd4b50baee807b67360' // Typically used to get fee from interal wallet
@@ -46,7 +47,9 @@ module.exports = {
   // seed the db in development mode
 
   nats: {
-    servers: ['nats://gnatsd:4222']
+    servers: process.env.NATS_SERVERS || [
+      'nats://nats.nats.svc.cluster.local:4222'
+    ]
   },
   seedDB: true
 };

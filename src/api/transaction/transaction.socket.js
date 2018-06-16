@@ -7,7 +7,8 @@
 import NATS from 'nats';
 import config from '../../config/environment';
 import TransactionEvents from './transaction.events';
-const nats = NATS.connect({ servers: config.nats.servers, json: true });
+var servers = config.nats.servers;
+const nats = NATS.connect({ servers, json: true });
 
 // currentServer is the URL of the connected server.
 console.log(`[NATS] Connected to ${nats.currentServer.url.host}`);
