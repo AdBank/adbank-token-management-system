@@ -110,4 +110,58 @@ describe('Transaction API:', () => {
         .end(done);
     });
   });
+
+
+  describe('POST /batchRequest', () => {
+    it('should respond 201 and batch multiple transactions when authenticated', done => {
+      request(app)
+        .post('/batchRequest')
+        .set('x-api-key', `${config.key}`)
+        .send([{
+          txId: '5b253b7f7724004c2c04d775',
+          account: '1',
+          sender: 'advertiser test advertiser',
+          receiver: 'publisher test publisher',
+          from: '5b17f7a059ca190014773f8c',
+          to: '5b17f7b559ca19001477408e',
+          amount: 30,
+          action: 'spent',
+          status: 'Starting',
+          createdAt: '2018-06-16T16:31:59.219Z',
+          updatedAt: '2018-06-16T16:31:59.219Z',
+        },
+        {
+          txId: '5b253b7f7724004c2c04d776',
+          account: '1',
+          sender: 'advertiser test advertiser',
+          receiver: 'publisher test publisher',
+          from: '5b17f7b559ca19001477408e ',
+          to: '5b17f7a059ca190014773f8c',
+          amount: 30,
+          action: 'spent',
+          status: 'Starting',
+          createdAt: '2018-06-16T16:31:59.219Z',
+          updatedAt: '2018-06-16T16:31:59.219Z',
+        }])
+        .expect(201)
+        .expect('Content-Type', /json/)
+        .end((err, res) => {
+          // console.log('res', res.body);
+          expect(mongoose.Types.ObjectId.isValid(res.body._id)).to.equal(true);
+          expect(mongoose.Types.ObjectId.isValid(res.body.from)).to.equal(true);
+          expect(mongoose.Types.ObjectId.isValid(res.body.to)).to.equal(true);
+          expect(res.body.amount).to.equal(1000);
+          done();
+        });
+    });
+
+    it('should respond with a 401 when not authenticated', done => {
+      request(app)
+        .post('/api/v1/transactions')
+        .set('x-api-key', 'abc123')
+        .send()
+        .expect(401)
+        .end(done);
+    });
+  });
 });

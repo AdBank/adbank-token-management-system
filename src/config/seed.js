@@ -59,11 +59,13 @@ export default function seedDatabaseIfNeeded() {
           txId: '5b1ac68f94f5ab0013c0707d',
           from: '5b17f7a059ca190014773f8c',
           to: '5b17f7b559ca19001477408e',
-          amount: 20000000000000000000,
+          amount: 200,
           hash:
             '0x0420240d2f8e95a08814afd4175491a904279534655c69055e64bd4f2b15a1a9',
           action: 'spent',
-          status: 'complete'
+          status: 'complete',
+          sender: 'test advertiser',
+          receiver: 'test publisher',
         },
         {
           _id: '5b1ac7ee94f5ab0013c0707b',
@@ -71,11 +73,13 @@ export default function seedDatabaseIfNeeded() {
           txId: '5b1ac7ee94f5ab0013c0707d',
           from: '5b17f7a059ca190014773f8c',
           to: '5b17f7b559ca19001477408e',
-          amount: 25000000000000000000,
+          amount: 250,
           hash:
             '0xab06174456070c79ffdfcbe197b64895f97afe22ef8f0c2e13e4ffe7fe6c33a5',
           action: 'spent',
-          status: 'complete'
+          status: 'complete',
+          sender: 'test advertiser',
+          receiver: 'test publisher',
         }
       )
         .then(() => console.log('[SEED] finished populating transactions'))

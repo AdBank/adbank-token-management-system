@@ -45,6 +45,14 @@ var TransactionSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true
+    },
+    sender: {
+      type: String,
+      required: true
+    },
+    receiver: {
+      type: String,
+      required: true
     }
   },
   { timestamps: true }

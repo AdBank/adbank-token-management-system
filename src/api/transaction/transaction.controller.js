@@ -97,6 +97,7 @@ function respondWithResult(res, statusCode, action) {
 function handleError(res, statusCode) {
   statusCode = statusCode || 500;
   return err => {
+    console.log('handleError err', err);
     res.status(statusCode).send(err);
   };
 }
@@ -116,6 +117,8 @@ export async function create(req, res) {
     || !req.body.txId
     || !req.body.from
     || !req.body.to
+    || !req.body.sender
+    || !req.body.receiver
     || !req.body.amount
     || isNaN(req.body.amount)
   ) {
@@ -124,6 +127,8 @@ export async function create(req, res) {
   }
 
   return Transaction.create({
+    sender: req.body.sender,
+    receiver: req.body.receiver,
     account: req.body.account,
     txId: req.body.txId,
     from: req.body.from,
@@ -131,6 +136,7 @@ export async function create(req, res) {
     amount: req.body.amount,
     action: 'Spent',
     status: 'Processing'
+
   })
     .then(respondWithResult(res, 201, 'create'))
     .catch(handleError(res));
@@ -144,6 +150,8 @@ export async function withdraw(req, res) {
   console.log('req.body', req.body);
   if(
     !req.body.account
+    || !req.body.sender
+    || !req.body.receiver
     || !req.body.address
     || !req.body.walletId
     || !req.body.amount
@@ -155,6 +163,8 @@ export async function withdraw(req, res) {
 
   return Transaction.create({
     account: req.body.account,
+    sender: req.body.sender,
+    receiver: req.body.receiver,
     txId: req.body.txId,
     from: req.body.from,
     to: req.body.to,
@@ -181,7 +191,7 @@ async function handleTransaction(entity) {
   let fromWallet = await Wallet.findOne({ _id: fromWalletId });
   if(!fromWallet) {
     console.log('Wallet doesn\'t exist!');
-    
+
     entity.status = 'Wallet doesn\'t exist!';
     return updateTransaction(entity);
   }
@@ -191,7 +201,7 @@ async function handleTransaction(entity) {
   // validate toWalletId is 12-byte ObjectId value
   if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
     console.log('Invalid wallet id!');
-    
+
     entity.status = 'Invalid wallet id!';
     return updateTransaction(entity);
   }
@@ -201,7 +211,7 @@ async function handleTransaction(entity) {
   let toWallet = await Wallet.findOne({ _id: toWalletId });
   if(!toWallet) {
     console.log('Wallet doesn\'t exist!');
-    
+
     entity.status = 'Wallet doesn\t exist!';
     return updateTransaction(entity);
   }
@@ -211,7 +221,7 @@ async function handleTransaction(entity) {
   // verify the amount is greater than 0
   if(amount <= 0) {
     console.log('Token amount shouldn\'t be equal to 0!');
-    
+
     entity.status = 'token amount error!';
     return updateTransaction(entity);
   }
@@ -249,7 +259,7 @@ async function handleTransaction(entity) {
       // check if totalAmount is greater than balance and reject if true
       if(totalAmount > balance) {
         console.log('err', 'Insufficient balance!');
-        
+
         entity.status = 'failed : Insufficient balance!';
         return updateTransaction(entity);
       }
@@ -321,12 +331,12 @@ async function handleTransaction(entity) {
           /* Calculate ideal gas end */
 
           var totalETH = new BigNumber(totalGas.times(gasPrice));
-          console.log(`Total ETH Estimated - ${  totalETH}`);
+          console.log(`Total ETH Estimated - ${totalETH}`);
 
           var ethAmount = new BigNumber(
             await web3.eth.getBalance(fromWallet.address)
           );
-          console.log(`Current ETH - ${  ethAmount}`);
+          console.log(`Current ETH - ${ethAmount}`);
 
           var giveETH = 0;
           var flag = false;
@@ -336,7 +346,7 @@ async function handleTransaction(entity) {
             giveETH = new BigNumber(totalETH.minus(ethAmount));
           }
 
-          console.log(`Give ETH - ${  giveETH}`);
+          console.log(`Give ETH - ${giveETH}`);
           /* Supply Gas End */
 
           /* Promise Start */
@@ -475,14 +485,14 @@ async function handleTransaction(entity) {
         })
         .catch(err => {
           console.log('balanceOf to err', err);
-          // res.status(400).send({ status: false, msg: err });
-          return;
+          entity.status = 'Error: Decrypting key';
+          return updateTransaction(entity);
         });
     })
     .catch(err => {
       console.log('balanceOf from err', err);
-      // res.status(400).send({ status: false, msg: err });
-      return;
+      entity.status = 'Error: Decrypting key';
+      return updateTransaction(entity);
     });
   /* Check Balance End */
 }
