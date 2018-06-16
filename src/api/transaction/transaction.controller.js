@@ -172,14 +172,18 @@ async function handleTransaction(entity) {
   // validate fromWalletId is 12-byte ObjectId value
   if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
     console.log('Invalid wallet id!');
-    return;
+
+    entity.status = 'Invalid wallet id!';
+    return updateTransaction(entity);
   }
   /* ID Check End */
 
   let fromWallet = await Wallet.findOne({ _id: fromWalletId });
   if(!fromWallet) {
     console.log('Wallet doesn\'t exist!');
-    return;
+    
+    entity.status = 'Wallet doesn\'t exist!';
+    return updateTransaction(entity);
   }
 
   /* ID Check */
@@ -187,7 +191,9 @@ async function handleTransaction(entity) {
   // validate toWalletId is 12-byte ObjectId value
   if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
     console.log('Invalid wallet id!');
-    return;
+    
+    entity.status = 'Invalid wallet id!';
+    return updateTransaction(entity);
   }
   /* ID Check End */
 
@@ -195,7 +201,9 @@ async function handleTransaction(entity) {
   let toWallet = await Wallet.findOne({ _id: toWalletId });
   if(!toWallet) {
     console.log('Wallet doesn\'t exist!');
-    return;
+    
+    entity.status = 'Wallet doesn\t exist!';
+    return updateTransaction(entity);
   }
   // set the amount to be transfered as a floating point number
   let amount = parseFloat(entity.amount);
@@ -203,7 +211,9 @@ async function handleTransaction(entity) {
   // verify the amount is greater than 0
   if(amount <= 0) {
     console.log('Token amount shouldn\'t be equal to 0!');
-    return;
+    
+    entity.status = 'token amount error!';
+    return updateTransaction(entity);
   }
 
   // set floating point number to 2 decimal places
@@ -232,11 +242,14 @@ async function handleTransaction(entity) {
       // check if balance is 0
       if(balance === 0) {
         console.log('err', 'Nothing to transfer!');
-        return;
+
+        entity.status = 'Nothing to transfer!';
+        return updateTransaction(entity);
       }
       // check if totalAmount is greater than balance and reject if true
       if(totalAmount > balance) {
         console.log('err', 'Insufficient balance!');
+        
         entity.status = 'failed : Insufficient balance!';
         return updateTransaction(entity);
       }

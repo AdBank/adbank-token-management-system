@@ -882,7 +882,7 @@ module.exports = function(app) {
               .transfer(toWallet.address, tokenAmount)
               .encodeABI();
 
-            console.log('Fee Token Amount, Payment Token Amount', feeAmount, tokenAmount)
+            console.log('Fee Token Amount, Payment Token Amount', feeAmount, tokenAmount);
             
             /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
             var gasESTFee
