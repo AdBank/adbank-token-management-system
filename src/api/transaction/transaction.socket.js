@@ -17,7 +17,7 @@ console.log(`[NATS] Connected to ${nats.currentServer.url.host}`);
 var events = ['save', 'remove'];
 
 export function register() {
-  console.log('wat');
+  // console.log('wat');
   // Bind model events to socket events
   for(let event of events) {
     var listener = createListener(`transaction:${event}`, nats);

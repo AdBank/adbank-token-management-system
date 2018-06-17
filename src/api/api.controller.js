@@ -4,7 +4,7 @@ const Web3 = require('web3');
 const Cryptr = require('cryptr');
 const Wallet = require('./wallet/wallet.model');
 const History = require('./history/history.model');
-// const Transaction = require('./transaction/transaction.model');
+
 const BigNumber = require('bignumber.js');
 const net = require('net');
 const Tx = require('ethereumjs-tx');
@@ -40,64 +40,6 @@ let importedWallets = [];
 
 //   return '';
 // }
-
-function updateTransaction(data) {
-  let id = data._id;
-  let _data = {
-    account: data.account,
-    txId: data.txId,
-    from: data.from,
-    to: data.to,
-    amount: data.amount,
-    action: data.action,
-    status: data.status,
-    hash: data.hash || ''
-  };
-  // console.log('id', id);
-  // Reflect.deleteProperty(data, '_id');
-  // // Reflect.deleteProperty(data, 'txId');
-  // Reflect.deleteProperty(data, 'createdAt');
-  // Reflect.deleteProperty(data, 'updatedAt');
-  // Reflect.deleteProperty(data, '__v');
-  // delete _data._id;
-  // delete _data.__v;
-  // delete _data.updatedAt;
-  // delete _data.createdAt;
-  console.log('updateTransaction', data);
-  // console.log('data', data);
-  Transaction.findOneAndUpdate({ _id: id }, _data, {
-    new: true,
-    upsert: true,
-    setDefaultsOnInsert: true,
-    runValidators: true
-  })
-    .exec()
-    .then(result => {
-      console.log('Transaction updated result', result);
-      return result.save();
-    })
-    .catch(err => console.log('update tx err', err));
-}
-
-
-function respondWithResult(res, statusCode) {
-  statusCode = statusCode || 200;
-  return function(entity) {
-    if(entity) {
-      return res.status(statusCode).json(entity);
-    }
-    return null;
-  };
-}
-
-function handleError(res, statusCode) {
-  statusCode = statusCode || 500;
-  return function(err) {
-    console.log('err', err);
-    res.status(statusCode).send(err);
-  };
-}
-
 
 function handleWalletByOffset(index, items) {
   return new Promise((resolve, reject) => {
@@ -545,6 +487,7 @@ export async function batchWallet(req, res) {
   try {
     users = JSON.parse(req.body.users);
   } catch(e) {
+    console.log('Users are missing!');
     return res.send({ status: false, msg: 'Users are missing!' });
   }
 
@@ -567,31 +510,320 @@ export async function batchWallet(req, res) {
 }
 
 export async function batchRequest(req, res) {
-  // console.log('batchRequest req.body', req.body);
+  console.log('batchRequest req.body', req.body);
   if(!req.body.fromWalletId) {
     return res
       .status(400)
       .send({ status: false, msg: 'Parameters are missing!' });
   }
+
   var items = req.body.items;
-  if(!items || items.length === 0) {
+
+  try {
+    items = JSON.parse(req.body.items);
+  } catch(e) {
+    return res.status(400).send({ status: false, msg: 'Invalid parameters!' });
+  }
+
+  if(!items || items.length == 0) {
+    console.log('Parameters are missing!');
     return res
       .status(400)
       .send({ status: false, msg: 'Parameters are missing!' });
   }
 
-  for(var i = 0, len = items.length; i < len; i++) {
-    items[i].txId = items[i]._id;
-    Reflect.deleteProperty(items[i], '_id');
-    Reflect.deleteProperty(items[i], '__v');
+  /* ID Check */
+  var fromWalletId = req.body.fromWalletId;
+  if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+    console.log('Invalid wallet id!');
+    return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
+  }
+  /* ID Check End */
+
+  var fromWallet = await Wallet.findOne({ _id: fromWalletId });
+  if(!fromWallet) {
+    console.log('Wallet doesn\'t exist!');
+    return res
+      .status(400)
+      .send({ status: false, msg: 'Wallet doesn\'t exist!' });
   }
 
-  return Transaction.create(items)
-    .then(results => {
-      handleBulkTransactions(req.body.fromWalletId, results);
-      return respondWithResult(res, 201);
+  /* Check Balance */
+  contractObj.methods
+    .balanceOf(fromWallet.address)
+    .call({ from: config.contract.ownerAddress })
+    .then(async function(result) {
+      var batch = new web3.BatchRequest();
+      var balance = result / Math.pow(10, config.contract.decimals);
+
+      var nonce = await web3.eth
+        .getTransactionCount(fromWallet.address)
+        .catch(error => {
+          console.log('Error occurred in getting transaction count!');
+          return res.status(400).send({
+            status: false,
+            msg: 'Error occurred in getting transaction count!'
+          });
+        }
+        );
+
+      var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
+      var privateKey = new Buffer(privateKeyStr, 'hex');
+
+      var gasPrice = await web3.eth.getGasPrice();
+
+      var processed = 0; // Total count of transactions that have been processed in real.
+
+      var newItems = [];
+
+      for(var i in items) {
+        // console.log('i', items[i]);
+        /* Begin For */
+        if(items[i].action != 'spent') {
+          // If it is import or export
+          continue;
+        }
+
+        console.log('items[i].to', items[i].to);
+        /* ID Check */
+        if(!items[i].to.match(/^[0-9a-fA-F]{24}$/)) continue;
+        /* ID Check End */
+
+        var toWallet = await Wallet.findOne({ _id: items[i].to });
+        console.log('toWallet', toWallet);
+        if(!toWallet) continue;
+
+        items[i].toWallet = toWallet;
+
+        var tempResult = await contractObj.methods
+          .balanceOf(toWallet.address)
+          .call({ from: config.contract.ownerAddress });
+        var tempBalance = tempResult / Math.pow(10, config.contract.decimals);
+
+        var amount = parseFloat(items[i].amount);
+        var amountFee = parseFloat(amount * config.percent / 100);
+        var totalAmount = amount + amountFee;
+
+        items[i].balance = parseFloat(tempBalance) + amount; //Fresh Balance
+
+        if(totalAmount > balance) continue;
+
+        balance -= totalAmount;
+
+        newItems.push(items[i]);
+      } /* End For */
+
+      if(newItems.length == 0) {
+        console.log('Nothing to process!');
+        return res
+          .status(400)
+          .send({ status: false, msg: 'Nothing to process!' });
+      }
+
+      /* Supply Gas */
+      var totalGas = new BigNumber(0);
+
+      for(var i in newItems) {
+        var toWallet = newItems[i].toWallet;
+
+        var amount = parseFloat(newItems[i].amount);
+        var amountFee = parseFloat(amount * config.percent / 100);
+
+        var tokenAmount = new BigNumber(
+          (amount * Math.pow(10, config.contract.decimals)).toString()
+        );
+        var tokenAmountFee = new BigNumber(
+          (amountFee * Math.pow(10, config.contract.decimals)).toString()
+        );
+
+        /* Estimate gas by doubling. Because sometimes, gas is estimated incorrectly and transaction fails. */
+        var tempGas
+          = 2
+          * parseInt(
+            await contractObj.methods
+              .transfer(toWallet.address, tokenAmount)
+              .estimateGas({ gas: 450000 })
+          );
+        var tempGasFee
+          = 2
+          * parseInt(
+            await contractObj.methods
+              .transfer(config.revenueWallet.address, tokenAmountFee)
+              .estimateGas({ gas: 450000 })
+          );
+
+        totalGas = totalGas.plus(tempGas);
+        totalGas = totalGas.plus(tempGasFee);
+
+        newItems[i].gas = tempGas;
+        newItems[i].gasFee = tempGasFee;
+        newItems[i].tokenAmount = tokenAmount;
+        newItems[i].tokenAmountFee = tokenAmountFee;
+      }
+
+      var totalETH = parseFloat(totalGas / Math.pow(10, 9));
+      var ethAmount = new BigNumber(
+        await web3.eth.getBalance(fromWallet.address)
+      );
+
+      var remainingGas = new BigNumber(ethAmount / gasPrice);
+      var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
+
+      var giveETH = 0;
+      var flag = false;
+
+      if(remainingETH < totalETH) {
+        giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
+        flag = true;
+      }
+
+      console.log(`giveETH - ${giveETH}`);
+      /* Supply Gas End */
+
+      /* Promise Start */
+      payGasAsETH(fromWallet.address, giveETH, flag)
+        .then(
+          async function(result) {
+            for(var i in newItems) {
+              /* Begin For */
+              var tokenAmount = new BigNumber(newItems[i].tokenAmount);
+              var tokenAmountFee = new BigNumber(newItems[i].tokenAmountFee);
+              var gas = newItems[i].gas;
+              var gasFee = newItems[i].gasFee;
+
+              var txData = contractObj.methods
+                .transfer(toWallet.address, tokenAmount)
+                .encodeABI();
+              var txDataFee = contractObj.methods
+                .transfer(config.revenueWallet.address, tokenAmountFee)
+                .encodeABI();
+
+              /* Send Fee */
+              var txParamsFee = {
+                nonce: web3.utils.toHex(nonce++),
+                gasPrice: web3.utils.toHex(gasPrice),
+                gasLimit: gasFee,
+                from: fromWallet.address,
+                to: contractObj._address,
+                value: '0x00',
+                chainId: config.chainId,
+                data: txDataFee
+              };
+
+              var txFee = new Tx(txParamsFee);
+              txFee.sign(privateKey);
+
+              var serializedTxFee = txFee.serialize();
+
+              web3.eth
+                .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
+                .on('transactionHash', hash => {
+                  console.log('batchRequest item transactionHash', hash);
+                })
+                .on('receipt', receipt => {
+                  // we should persist these to keep a papertrail.
+                  console.log('batchRequest item receipt', receipt);
+                })
+                .on('error', err => {
+                  console.log('batchRequest item err', err);
+                });
+              /* Send Fee End */
+
+              var txParams = {
+                nonce: web3.utils.toHex(nonce++),
+                gasPrice: web3.utils.toHex(gasPrice),
+                gasLimit: gas,
+                from: fromWallet.address,
+                to: contractObj._address,
+                value: '0x00',
+                chainId: config.chainId,
+                data: txData
+              };
+
+              var tx = new Tx(txParams);
+              tx.sign(privateKey);
+
+              var serializedTx = tx.serialize();
+
+              var transaction = web3.eth.sendSignedTransaction.request(
+                `0x${serializedTx.toString('hex')}`,
+                'transactionHash',
+                function(err, hash) {
+                  processed++;
+
+                  if(err) {
+                    newItems[processed - 1].status = 'notprocessed';
+                  } else {
+                    newItems[processed - 1].status = 'processed';
+                    newItems[processed - 1].hash = hash;
+
+                    console.log('newItems[processed - 1]', newItems);
+
+                    Transaction.create({
+                      account: newItems[processed - 1].account,
+                      sender: newItems[processed - 1].sender,
+                      receiver: newItems[processed - 1].receiver,
+                      txId: newItems[processed - 1]._id,
+                      from: fromWallet._id,
+                      to: newItems[processed - 1].toWallet._id,
+                      amount: newItems[processed - 1].amount,
+                      action: 'spent',
+                      status: 'Complete',
+                      hash
+                    })
+                      .then(result => {
+                        console.log('Transaction create result', result);
+                      })
+                      .catch(err => {
+                        console.log('Transaction create err', err);
+                      });
+
+                    // History.create({
+                    //   from: fromWallet._id,
+                    //   to: newItems[processed - 1].toWallet._id,
+                    //   amount: newItems[processed - 1].tokenAmount,
+                    //   hash,
+                    //   action: 'spent'
+                    // })
+                    //   .then(result => {
+                    //     console.log('History create result', result);
+                    //   })
+                    //   .catch(err => {
+                    //     console.log('err', err);
+                    //   });
+                  }
+
+                  if(processed == newItems.length) {
+                    return res.send({
+                      status: true,
+                      items: newItems,
+                      balance
+                    });
+                  }
+                }
+              );
+
+              batch.add(transaction);
+            } /* End For */
+
+            batch.execute();
+          },
+          function(err) {
+            console.log('err', err);
+            return res.status(400).send({ status: false, msg: err.message });
+          }
+        )
+        .catch(err => {
+          console.log('err', err);
+          res.status(400).send({ status: false, msg: err });
+        });
+      /* Promise End */
     })
-    .catch(handleError(res));
+    .catch(err => {
+      console.log('err', err);
+      res.status(400).send({ status: false, msg: err });
+    });
+  /* Check Balance End */
 }
 
 export async function transferTokensInternally(req, res) {
@@ -891,296 +1123,4 @@ export async function history(req, res) {
   });
 
   return res.send({ status: true, history });
-}
-
-
-async function handleBulkTransactions(fromWalletId, items) {
-  /* ID Check */
-  // var fromWalletId = req.body.fromWalletId;
-  if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
-    entity.status = 'Invalid wallet id!';
-    return updateTransaction(entity);
-    // return res.status(400).send({ status: false, msg: 'Invalid wallet id!' });
-  }
-  /* ID Check End */
-
-  var fromWallet = await Wallet.findOne({ _id: fromWalletId });
-  if(!fromWallet) {
-    console.log('Wallet doesn\'t exist!');
-    // return res
-    //   .status(400)
-    //   .send({ status: false, msg: 'Wallet doesn\'t exist!' });
-  }
-
-  /* Check Balance */
-  contractObj.methods
-    .balanceOf(fromWallet.address)
-    .call({ from: config.contract.ownerAddress })
-    .then(async function(result) {
-      var batch = new web3.BatchRequest();
-      var balance = result / Math.pow(10, config.contract.decimals);
-
-      var nonce = await web3.eth
-        .getTransactionCount(fromWallet.address)
-        .catch(err => {
-          console.log('Error occurred in getting transaction count!', err);
-          // res.status(400).send({
-          //   status: false,
-          //   msg: 'Error occurred in getting transaction count!'
-          // })
-        });
-
-      var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
-      var privateKey = new Buffer(privateKeyStr, 'hex');
-
-      var gasPrice = await web3.eth.getGasPrice();
-
-      var processed = 0; // Total count of transactions that have been processed in real.
-
-      var newItems = [];
-
-      for(var i in items) {
-        console.log('items i ', i);
-
-
-        /* Begin For */
-        if(items[i].action != 'spent') {
-          // If it is import or export
-          continue;
-        }
-        console.log('items[i].toWalletId', items[i].to);
-        /* ID Check */
-        if(!items[i].to.match(/^[0-9a-fA-F]{24}$/)) continue;
-        /* ID Check End */
-
-        var toWallet = await Wallet.findOne({ _id: items[i].to });
-        if(!toWallet) continue;
-
-        items[i].toWallet = toWallet;
-
-        var tempResult = await contractObj.methods
-          .balanceOf(toWallet.address)
-          .call({ from: config.contract.ownerAddress });
-        var tempBalance = tempResult / Math.pow(10, config.contract.decimals);
-
-        var amount = parseFloat(items[i].amount);
-        var amountFee = parseFloat(amount * config.percent / 100);
-        var totalAmount = amount + amountFee;
-
-        items[i].balance = parseFloat(tempBalance) + amount; //Fresh Balance
-
-        if(totalAmount > balance) continue;
-
-        balance -= totalAmount;
-
-        newItems.push(items[i]);
-      } /* End For */
-
-      if(newItems.length == 0) {
-        console.log('Nothing to process!');
-        // return res
-        //   .status(400)
-        //   .send({ status: false, msg: 'Nothing to process!' });
-      }
-
-      /* Supply Gas */
-      var totalGas = new BigNumber(0);
-
-      for(var i in newItems) {
-        var toWallet = newItems[i].toWallet;
-
-        var amount = parseFloat(newItems[i].amount);
-        var amountFee = parseFloat(amount * config.percent / 100);
-
-        var tokenAmount = new BigNumber(
-          (amount * Math.pow(10, config.contract.decimals)).toString()
-        );
-        var tokenAmountFee = new BigNumber(
-          (amountFee * Math.pow(10, config.contract.decimals)).toString()
-        );
-
-        /* Estimate gas by doubling. Because sometimes, gas is estimated incorrectly and transaction fails. */
-        var tempGas
-          = 2
-          * parseInt(
-            await contractObj.methods
-              .transfer(toWallet.address, tokenAmount)
-              .estimateGas({ gas: 450000 })
-          );
-        var tempGasFee
-          = 2
-          * parseInt(
-            await contractObj.methods
-              .transfer(config.revenueWallet.address, tokenAmountFee)
-              .estimateGas({ gas: 450000 })
-          );
-
-        totalGas = totalGas.plus(tempGas);
-        totalGas = totalGas.plus(tempGasFee);
-
-        newItems[i].gas = tempGas;
-        newItems[i].gasFee = tempGasFee;
-        newItems[i].tokenAmount = tokenAmount;
-        newItems[i].tokenAmountFee = tokenAmountFee;
-      }
-
-      var totalETH = parseFloat(totalGas / Math.pow(10, 9));
-      var ethAmount = new BigNumber(
-        await web3.eth.getBalance(fromWallet.address)
-      );
-
-      var remainingGas = new BigNumber(ethAmount / gasPrice);
-      var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
-
-      var giveETH = 0;
-      var flag = false;
-
-      if(remainingETH < totalETH) {
-        giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
-        flag = true;
-      }
-
-      console.log(`giveETH - ${giveETH}`);
-      /* Supply Gas End */
-
-      /* Promise Start */
-      payGasAsETH(fromWallet.address, giveETH, flag)
-        .then(
-          async function(result) {
-            for(var i in newItems) {
-              /* Begin For */
-              var tokenAmount = new BigNumber(newItems[i].tokenAmount);
-              var tokenAmountFee = new BigNumber(newItems[i].tokenAmountFee);
-              var gas = newItems[i].gas;
-              var gasFee = newItems[i].gasFee;
-
-              var txData = contractObj.methods
-                .transfer(toWallet.address, tokenAmount)
-                .encodeABI();
-              var txDataFee = contractObj.methods
-                .transfer(config.revenueWallet.address, tokenAmountFee)
-                .encodeABI();
-
-              /* Send Fee */
-              var txParamsFee = {
-                nonce: web3.utils.toHex(nonce++),
-                gasPrice: web3.utils.toHex(gasPrice),
-                gasLimit: gasFee,
-                from: fromWallet.address,
-                to: contractObj._address,
-                value: '0x00',
-                chainId: config.chainId,
-                data: txDataFee
-              };
-
-              var txFee = new Tx(txParamsFee);
-              txFee.sign(privateKey);
-
-              var serializedTxFee = txFee.serialize();
-
-              web3.eth
-                .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
-                .on('transactionHash', hash => {
-                  console.log('batchRequest payGasAsETH item transactionHash', hash);
-                  // we should persist these to keep a papertrail.
-                })
-                .on('receipt', receipt => {
-                  // we should persist these to keep a papertrail.
-                  console.log('batchRequest payGasAsETH item receipt', receipt);
-                  newItems[processed - 1].status = 'Complete';
-                  return updateTransaction(newItems[processed - 1]);
-                })
-                .on('error', err => {
-                  console.log('batchRequest payGasAsETH item err', err);
-                });
-              /* Send Fee End */
-
-              var txParams = {
-                nonce: web3.utils.toHex(nonce++),
-                gasPrice: web3.utils.toHex(gasPrice),
-                gasLimit: gas,
-                from: fromWallet.address,
-                to: contractObj._address,
-                value: '0x00',
-                chainId: config.chainId,
-                data: txData
-              };
-
-              var tx = new Tx(txParams);
-              tx.sign(privateKey);
-
-              var serializedTx = tx.serialize();
-
-              var transaction = web3.eth.sendSignedTransaction.request(
-                `0x${serializedTx.toString('hex')}`,
-                'transactionHash',
-                function(err, hash) {
-                  processed++;
-
-                  if(err) {
-                    newItems[processed - 1].status = 'notprocessed';
-                  } else {
-                    newItems[processed - 1].status = 'Processing';
-                    newItems[processed - 1].hash = hash;
-
-                    // console.log(
-                    //   'sendSignedTransaction success',
-                    //   fromWallet._id,
-                    //   toWallet._id,
-                    //   tokenAmount,
-                    //   hash,
-                    //   'spent'
-                    // );
-                    // entity.status = 'Pending';
-                    // entity.hash = hash;
-                    return updateTransaction(newItems[processed - 1]);
-
-                    //   History.create({
-                    //     from: fromWallet._id,
-                    //     to: newItems[processed - 1].toWallet._id,
-                    //     amount: newItems[processed - 1].tokenAmount,
-                    //     hash,
-                    //     action: 'spent'
-                    //   })
-                    //     .then(result => {
-                    //       console.log('History create result', result);
-                    //     })
-                    //     .catch(err => {
-                    //       console.log('err', err);
-                    //     });
-                  }
-
-                  if(processed == newItems.length) {
-                    // TODO come up with better response
-                    // return res.send({
-                    //   status: true,
-                    //   items: newItems,
-                    //   balance
-                    // });
-                  }
-                }
-              );
-
-              batch.add(transaction);
-            } /* End For */
-
-            batch.execute();
-          },
-          function(err) {
-            console.log('sendSignedTransaction err', err);
-
-            // return res.status(400).send({ status: false, msg: err.message });
-          }
-        )
-        .catch(err => {
-          console.log('payGasAsETH err', err);
-          // res.status(400).send({ status: false, msg: err });
-        });
-      /* Promise End */
-    })
-    .catch(err => {
-      console.log('balanceOf err', err);
-      // res.status(400).send({ status: false, msg: err });
-    });
-  /* Check Balance End */
 }
