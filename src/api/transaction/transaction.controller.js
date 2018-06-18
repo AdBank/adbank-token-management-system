@@ -515,9 +515,6 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
-      gasPrice = new BigNumber(10000000000);
-      ethAmount = new BigNumber(2000000000000000);
-
       console.log('We are in PayGasASETH function');
       console.log('Gas Price: ' + gasPrice);
       console.log('Network Wallet Address: ' + config.networkWallet.address);
@@ -527,6 +524,8 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       var privateKey = new Buffer(privateKeyStr, 'hex');
 
+      console.log('Private Key: ' + privateKey);
+      
       var nonce = await web3.eth
         .getTransactionCount(config.networkWallet.address)
         .catch(error => {
