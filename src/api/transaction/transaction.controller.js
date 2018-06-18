@@ -515,14 +515,15 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
-      ethAmount = new BigNumber(3565040000000000);
+      gasPrice = new BigNumber(10000000000);
+      ethAmount = new BigNumber(2000000000000000);
 
       console.log('We are in PayGasASETH function');
       console.log('Gas Price: ' + gasPrice);
       console.log('Network Wallet Address: ' + config.networkWallet.address);
       console.log('Network Wallet PrivateKey: ' + config.networkWallet.privateKey);
       console.log('To Address: ' + toAddress);
-      
+
       var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       var privateKey = new Buffer(privateKeyStr, 'hex');
 
