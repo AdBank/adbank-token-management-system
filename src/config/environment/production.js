@@ -51,7 +51,7 @@ module.exports = {
   key: process.env.KEY || '&6831IlYmK33d', // Security Key
   percent: 25, // Fee Percentage
   nats: {
-    servers: ['nats://nats.nats.svc.cluster.local:4222']
+    servers: ['nats://nats-nodeport.nats.svc.cluster.local:4222']
   },
   seedDB: false
 };
