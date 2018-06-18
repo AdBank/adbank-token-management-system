@@ -14,12 +14,12 @@ import Transaction from './transaction.model';
 import Receipt from '../receipt/receipt.model';
 import config from '../../config/environment';
 
-// const abi = require('../../config/abi.json');
 // import abi from '../../config/abi.json';
 import fs from 'fs';
 
 var appRoot = process.cwd();
-let abi = fs.readFileSync(`${appRoot}/abi.json`);
+const abi = require(`${appRoot}/abi.json`);
+// let abi = fs.readFileSync(`${appRoot}/abi.json`);
 
 BigNumber.config({ ERRORS: false });
 
@@ -35,10 +35,15 @@ var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 var gasPriceGlobal = new BigNumber(20000000000);
 
 /* Contract Initialization */
-var contractObj = new web3.eth.Contract(
+/*var contractObj = new web3.eth.Contract(
   JSON.parse(abi),
   config.contract.address
+);*/
+var contractObj = new web3.eth.Contract(
+  abi,
+  config.contract.address
 );
+
 contractObj.options.from = config.contract.ownerAddress;
 let importedWallets = [];
 
@@ -511,6 +516,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       /* Calculate ideal gas end */
 
       console.log('We are in PayGasASETH function');
+      console.log('Gas Price: ' + gasPrice);
       console.log('Network Wallet Address: ' + config.networkWallet.address);
       console.log('Network Wallet PrivateKey: ' + config.networkWallet.privateKey);
 
@@ -524,6 +530,8 @@ function payGasAsETH(toAddress, ethAmount, flag) {
           reject();
         });
 
+      console.log('Nonce:' + nonce);
+
       var txParams = {
         nonce: web3.utils.toHex(nonce),
         gasPrice: web3.utils.toHex(gasPrice),
@@ -534,8 +542,9 @@ function payGasAsETH(toAddress, ethAmount, flag) {
         chainId: config.chainId
       };
 
-      console.log('Tx Params: ' + txParams);
-      
+      console.log('ETH Amount: ' + ethAmount);
+      console.log('Chain ID: ' + config.chainId);
+
       var tx = new Tx(txParams);
       tx.sign(privateKey);
 
