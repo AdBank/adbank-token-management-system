@@ -526,9 +526,12 @@ function payGasAsETH(toAddress, ethAmount, flag) {
 
       const privateKeyTemp = Buffer.from(config.networkWallet.privateKey, 'hex');
       
-      console.log('Private Key: ' + privateKey);
-      console.log('Private Key Temp: ' + privateKeyTemp);
-      
+      console.log('Private key here...');
+      console.log(privateKey);
+
+      console.log('Private key here...');
+      console.log(privateKeyTemp);
+
       var nonce = await web3.eth
         .getTransactionCount(config.networkWallet.address)
         .catch(error => {
