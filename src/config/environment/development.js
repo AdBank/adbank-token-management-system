@@ -12,7 +12,6 @@ module.exports = {
   // Server IP
   ip: process.env.IP || '0.0.0.0',
 
-  name: 'token-management-server',
   port: process.env.PORT || 3000,
   mongo: {
     username: process.env.MONGODB_USER || '',

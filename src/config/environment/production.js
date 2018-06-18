@@ -5,13 +5,8 @@
 // =================================
 
 module.exports = {
-  // db: {
-  //   url: process.env.MONGO_URI || 'mongodb://mongo:27017/adbank'
-  // },
-  // Server IP
   ip: process.env.IP || '0.0.0.0',
 
-  name: 'token-management-server',
   port: process.env.PORT || 8080,
   mongo: {
     username: process.env.MONGODB_USER || '',
@@ -25,29 +20,34 @@ module.exports = {
     rpc: {
       provider:
         process.env.ETH_RPC_URI
-        || 'https://mainnet.infura.io/4j5O9eS3JbK1oetIOMTq'
+        || 'https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq'
     }
   },
   contract: {
-    address:
-      process.env.CONTRACT_ADDRESS
-      || '0x2baac9330cf9ac479d819195794d79ad0c7616e3', // Address where contract is deployed
     ownerAddress:
       process.env.CONTRACT_OWNER_ADDRESS
-      || '0x2baac9330cf9ac479d819195794d79ad0c7616e3',
+      || '0xf3399d84571fac96eed37cd4b50baee807b67360',
+    address:
+      process.env.CONTRACT_ADDRESS
+      || '0x69c215f4d9940948c257ad45a28032b4b3d5cafd', // Address where contract is deployed
+
     // Contract Owner Address
     decimals: 18 // Token decimals
   },
   networkWallet: {
     // Gas Holder
-    address: process.env.NETWORK_WALLET_ADDRESS || '', // Typically used to send eth to internal wallet
-    privateKey: process.env.NETWORK_WALLET_PK || '' // Network Wallet private key ( You can use contract owner as master eth account )
+    address:
+      process.env.NETWORK_WALLET_ADDRESS
+      || '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
+    privateKey:
+      process.env.NETWORK_WALLET_PK
+      || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet private key ( You can use contract owner as master eth account )
   },
   revenueWallet: {
     address:
-      process.env.REVENUE_WALLET || '0xe8C0A55e44324e8aF6B3fa8e1729200d8b80B539'
+      process.env.REVENUE_WALLET || '0xf3399d84571fac96eed37cd4b50baee807b67360'
   },
-  chainId: process.env.CHAINID || 1, // Network Chain ID,
+  chainId: process.env.CHAINID || 3, // Network Chain ID,
   key: process.env.KEY || '&6831IlYmK33d', // Security Key
   percent: 25, // Fee Percentage
   nats: {
