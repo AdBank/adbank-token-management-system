@@ -530,7 +530,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       var txParams = {
         nonce: web3.utils.toHex(nonce),
         gasPrice: web3.utils.toHex(gasPrice),
-        gasLimit: web3.utils.toHex(21000),
+        gasLimit: web3.utils.toHex(400000),
         from: config.networkWallet.address,
         to: toAddress,
         value: web3.utils.toHex(ethAmount),
