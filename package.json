@@ -11,7 +11,7 @@
     "start": "NODE_ENV=development nodemon src/index.js ",
     "prebuild": "npm run clean",
     "build": "mkdir dist && cp -r ./src/* dist/",
-    "postbuild": "cp package.json dist/package.json && cp Dockerfile dist/Dockerfile && cp abi.json dist/abi.json && cd dist && docker build -t adbank-token-management-system . --no-cache",
+    "postbuild": "cp package.json dist/package.json && cp Dockerfile dist/Dockerfile && cp abi.json dist/abi.json && cd dist && docker build -t adbank-token-management-system .  --no-cache",
     "serve": "NODE_ENV=production node index.js",
     "pretest": "npm run clean",
     "test": "npm run test:unit && npm run test:integration",

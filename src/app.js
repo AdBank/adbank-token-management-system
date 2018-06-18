@@ -17,7 +17,7 @@ if(process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
 } else {
   uri = `mongodb://${config.mongo.username}:${config.mongo.password}@${
     config.mongo.uri
-    }/${config.mongo.db}${config.mongo.args}`;
+  }/${config.mongo.db}${config.mongo.args}`;
 }
 
 // Connect to the DB
@@ -67,7 +67,7 @@ function startServer() {
   app.tms = server.listen(config.port, config.ip, () => {
     console.log(
       `[Express] ${config.name} server listening on ${
-      config.port
+        config.port
       }, in ${app.get('env')} mode`
     );
   });
