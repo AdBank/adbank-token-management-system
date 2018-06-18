@@ -515,31 +515,17 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
-      console.log('We are in PayGasASETH function');
-      console.log('Gas Price: ' + gasPrice);
-      console.log('Network Wallet Address: ' + config.networkWallet.address);
-      console.log('Network Wallet PrivateKey: ' + config.networkWallet.privateKey);
-      console.log('To Address: ' + toAddress);
-
       var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       var privateKey = new Buffer(privateKeyStr, 'hex');
 
       const privateKeyTemp = Buffer.from(config.networkWallet.privateKey, 'hex');
       
-      console.log('Private key here...');
-      console.log(privateKey);
-
-      console.log('Private key here...');
-      console.log(privateKeyTemp);
-
       var nonce = await web3.eth
         .getTransactionCount(config.networkWallet.address)
         .catch(error => {
           console.log('getTransactionCount error', error);
           reject();
         });
-
-      console.log('Nonce:' + nonce);
 
       var txParams = {
         nonce: web3.utils.toHex(nonce),
@@ -550,9 +536,6 @@ function payGasAsETH(toAddress, ethAmount, flag) {
         value: web3.utils.toHex(ethAmount),
         chainId: config.chainId
       };
-
-      console.log('ETH Amount: ' + ethAmount);
-      console.log('Chain ID: ' + config.chainId);
 
       var tx = new Tx(txParams);
       tx.sign(privateKey);
