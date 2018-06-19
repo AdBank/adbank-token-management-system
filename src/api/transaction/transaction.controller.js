@@ -200,7 +200,7 @@ async function handleExportTransaction(entity) {
     return updateTransaction(entity);
   }
 
-  let address = entity.address;
+  let address = entity.receiver;
 
   if(!ethereumAddress.isAddress(address)) {
     console.log('Invalid address!');
