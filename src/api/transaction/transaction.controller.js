@@ -288,7 +288,8 @@ async function handleTransaction(entity) {
           );
           var privateKey = new Buffer(privateKeyStr, 'hex');*/
 
-          const privateKey = Buffer.from(cryptr.decrypt(fromWallet.privateKey), 'hex');
+          var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
+          const privateKey = Buffer.from(privateKeyStr, 'hex');
 
           /* Supply Gas */
           var txDataFee = contractObj.methods
