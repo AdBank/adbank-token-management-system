@@ -39,10 +39,7 @@ var gasPriceGlobal = new BigNumber(20000000000);
   JSON.parse(abi),
   config.contract.address
 );*/
-var contractObj = new web3.eth.Contract(
-  abi,
-  config.contract.address
-);
+var contractObj = new web3.eth.Contract(abi, config.contract.address);
 
 contractObj.options.from = config.contract.ownerAddress;
 let importedWallets = [];
@@ -141,7 +138,6 @@ export async function create(req, res) {
     amount: req.body.amount,
     action: 'Spent',
     status: 'Processing'
-
   })
     .then(respondWithResult(res, 201, 'create'))
     .catch(handleError(res));
@@ -288,7 +284,9 @@ async function handleTransaction(entity) {
           );
           var privateKey = new Buffer(privateKeyStr, 'hex');*/
 
-          var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
+          var privateKeyStr = stripHexPrefix(
+            cryptr.decrypt(fromWallet.privateKey)
+          );
           const privateKey = Buffer.from(privateKeyStr, 'hex');
 
           /* Supply Gas */
@@ -390,17 +388,15 @@ async function handleTransaction(entity) {
               web3.eth
                 .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
                 .on('transactionHash', hash => {
+                  // should update mongo here
                   console.log('transactionHash for tx Fee', hash);
-                  return;
                 })
                 .on('recipet', recipet => {
                   // update mongo here
                   console.log('recipet for tx fee', recipet);
-                  return;
                 })
                 .on('error', err => {
                   console.log('sendSignedTransaction for tx fee err', err);
-                  return;
                 });
               /* Send Fee End */
 
@@ -522,7 +518,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       //var privateKey = new Buffer(privateKeyStr, 'hex');
 
       const privateKey = Buffer.from(config.networkWallet.privateKey, 'hex');
-      
+
       var nonce = await web3.eth
         .getTransactionCount(config.networkWallet.address)
         .catch(error => {
