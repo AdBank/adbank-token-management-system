@@ -781,6 +781,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
+      console.log('Gas Price - ' + gasPrice);
       //var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       //var privateKey = new Buffer(privateKeyStr, 'hex');
 
