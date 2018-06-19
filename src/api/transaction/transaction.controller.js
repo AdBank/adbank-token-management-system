@@ -545,11 +545,11 @@ function payGasAsETH(toAddress, ethAmount, flag) {
         .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
         .then(receipt => {
           console.log('sendSignedTransaction receipt', receipt);
-          Promise.resolve();
+          resolve();
         })
         .catch(err => {
           console.log('sendSignedTransaction error', err);
-          Promise.reject(err);
+          reject(err);
         });
     }
   });
