@@ -6,11 +6,12 @@ var morgan = require('morgan');
 var errorHandler = require('errorhandler');
 var http = require('http');
 // Configs
-var config = require(`./config/${process.env.NODE_ENV || 'dev'}.js`);
+// var config = require(`./config/${process.env.NODE_ENV || 'dev'}.js`);
+const config = require('./config/environment');
 
 // set the uri to mongo depending on environment
 let uri = '';
-if(process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
   uri = `mongodb://${config.mongo.uri}:${config.mongo.port}/${config.mongo.db}`;
 } else {
   uri = `mongodb://${config.mongo.username}:${config.mongo.password}@${
