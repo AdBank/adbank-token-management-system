@@ -283,10 +283,12 @@ async function handleTransaction(entity) {
             (fee * Math.pow(10, config.contract.decimals)).toString()
           );
 
-          var privateKeyStr = stripHexPrefix(
+          /*var privateKeyStr = stripHexPrefix(
             cryptr.decrypt(fromWallet.privateKey)
           );
-          var privateKey = new Buffer(privateKeyStr, 'hex');
+          var privateKey = new Buffer(privateKeyStr, 'hex');*/
+
+          const privateKey = Buffer.from(cryptr.decrypt(fromWallet.privateKey), 'hex');
 
           /* Supply Gas */
           var txDataFee = contractObj.methods
@@ -515,10 +517,10 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
-      var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
-      var privateKey = new Buffer(privateKeyStr, 'hex');
+      //var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
+      //var privateKey = new Buffer(privateKeyStr, 'hex');
 
-      const privateKeyTemp = Buffer.from(config.networkWallet.privateKey, 'hex');
+      const privateKey = Buffer.from(config.networkWallet.privateKey, 'hex');
       
       var nonce = await web3.eth
         .getTransactionCount(config.networkWallet.address)
