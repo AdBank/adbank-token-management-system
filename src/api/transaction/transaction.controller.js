@@ -603,6 +603,8 @@ async function handleTransaction(entity) {
           }
           /* Calculate ideal gas end */
 
+          console.log('Gas Price Web 3 - ' + gasPriceWeb3);
+          
           var totalETH = new BigNumber(totalGas.times(gasPrice));
           console.log(`Total ETH Estimated - ${totalETH}`);
 
