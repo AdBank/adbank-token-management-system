@@ -29,7 +29,7 @@ export function register() {
 
 function createListener(event, nats) {
   return function(doc) {
-    console.log(`transaction.save.${doc.account}`, doc);
+    // console.log(`transaction.save.${doc.account}`, doc);
     nats.publish(`transaction.save.${doc.account}`, doc);
     // spark.emit(event, doc);
   };

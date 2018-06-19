@@ -572,8 +572,7 @@ export async function batchRequest(req, res) {
             status: false,
             msg: 'Error occurred in getting transaction count!'
           });
-        }
-        );
+        });
 
       var privateKeyStr = stripHexPrefix(cryptr.decrypt(fromWallet.privateKey));
       const privateKey = Buffer.from(privateKeyStr, 'hex');
@@ -582,8 +581,7 @@ export async function batchRequest(req, res) {
       var gasPriceWeb3 = await web3.eth.getGasPrice();
       var gasPrice = new BigNumber(gasPriceGlobal);
 
-      if(gasPrice.isLessThan(gasPriceWeb3))
-        gasPrice = gasPriceWeb3;
+      if(gasPrice.isLessThan(gasPriceWeb3)) gasPrice = gasPriceWeb3;
       /* Calculate ideal gas end */
 
       var processed = 0; // Total count of transactions that have been processed in real.
@@ -676,22 +674,22 @@ export async function batchRequest(req, res) {
       }
 
       var totalETH = new BigNumber(totalGas.times(gasPrice));
-      console.log('Total ETH Estimated - ' + totalETH);
+      console.log(`Total ETH Estimated - ${totalETH}`);
 
       var ethAmount = new BigNumber(
-          await web3.eth.getBalance(fromWallet.address)
-        );
-      console.log('Current ETH - ' + ethAmount);
+        await web3.eth.getBalance(fromWallet.address)
+      );
+      console.log(`Current ETH - ${ethAmount}`);
 
       var giveETH = 0;
       var flag = false;
 
-      if(totalETH.isGreaterThan(ethAmount)){
+      if(totalETH.isGreaterThan(ethAmount)) {
         flag = true;
         giveETH = new BigNumber(totalETH.minus(ethAmount));
       }
 
-      console.log('Give ETH - ' + giveETH);
+      console.log(`Give ETH - ${giveETH}`);
       /* Supply Gas End */
 
       /* Promise Start */
@@ -783,7 +781,8 @@ export async function batchRequest(req, res) {
                       amount: newItems[processed - 1].amount,
                       action: 'spent',
                       status: 'Complete',
-                      hash
+                      hash,
+                      queueId: newItems[processed - 1].queueId
                     })
                       .then(result => {
                         console.log('Transaction create result', result);
@@ -791,7 +790,7 @@ export async function batchRequest(req, res) {
                       .catch(err => {
                         console.log('Transaction create err', err);
                       });
-
+                    delete newItems[processed - 1].toWallet;
                     // History.create({
                     //   from: fromWallet._id,
                     //   to: newItems[processed - 1].toWallet._id,
