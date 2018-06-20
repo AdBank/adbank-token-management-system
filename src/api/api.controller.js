@@ -26,7 +26,7 @@ var client = new net.Socket();
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 
 /* Gas Price For Fast & Safe Transaction */
-var gasPriceGlobal = new BigNumber(20000000000);
+var gasPriceGlobal = new BigNumber(45000000000);
 
 /* Contract Initialization */
 var contractObj = new web3.eth.Contract(abi, config.contract.address);
@@ -791,19 +791,6 @@ export async function batchRequest(req, res) {
                         console.log('Transaction create err', err);
                       });
                     delete newItems[processed - 1].toWallet;
-                    // History.create({
-                    //   from: fromWallet._id,
-                    //   to: newItems[processed - 1].toWallet._id,
-                    //   amount: newItems[processed - 1].tokenAmount,
-                    //   hash,
-                    //   action: 'spent'
-                    // })
-                    //   .then(result => {
-                    //     console.log('History create result', result);
-                    //   })
-                    //   .catch(err => {
-                    //     console.log('err', err);
-                    //   });
                   }
 
                   if(processed == newItems.length) {

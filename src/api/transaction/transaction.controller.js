@@ -32,7 +32,7 @@ var cryptr = new Cryptr('AdBankTokenNetwork');
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
 
 /* Gas Price For Fast & Safe Transaction */
-var gasPriceGlobal = new BigNumber(20000000000);
+var gasPriceGlobal = new BigNumber(45000000000);
 
 /* Contract Initialization */
 /*var contractObj = new web3.eth.Contract(
@@ -223,12 +223,8 @@ async function handleExportTransaction(entity) {
   // set floating point number to 2 decimal places
   amount = parseFloat(amount.toFixed(2));
 
-  // calculate fee based
-  var fee = parseFloat(amount * config.percent / 100); // Fee to Revenue Wallet
-  // trim fee to two decimal places
-  fee = parseFloat(fee.toFixed(2));
   //calculate total amount to be transfered
-  let totalAmount = parseFloat(amount) + parseFloat(fee);
+  let totalAmount = parseFloat(amount);
 
   // Check balance of wallet account
   contractObj.methods
@@ -261,37 +257,23 @@ async function handleExportTransaction(entity) {
       var tokenAmount = new BigNumber(
         (amount * Math.pow(10, config.contract.decimals)).toString()
       );
-      var feeAmount = new BigNumber(
-        (fee * Math.pow(10, config.contract.decimals)).toString()
-      );
-
+      
       var privateKeyStr = stripHexPrefix(
         cryptr.decrypt(wallet.privateKey)
       );
       const privateKey = Buffer.from(privateKeyStr, 'hex');
 
       /* Supply Gas */
-      var txDataFee = contractObj.methods
-        .transfer(config.revenueWallet.address, feeAmount)
-        .encodeABI();
       var txData = contractObj.methods
         .transfer(address, tokenAmount)
         .encodeABI();
 
       console.log(
-        'Fee Token Amount, Payment Token Amount',
-        feeAmount,
+        'Payment Token Amount',
         tokenAmount
       );
 
       /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
-      var gasESTFee
-        = 2
-        * parseInt(
-          await contractObj.methods
-            .transfer(config.revenueWallet.address, feeAmount)
-            .estimateGas({ gas: 450000 })
-        );
       var gasEST
         = 2
         * parseInt(
@@ -300,10 +282,9 @@ async function handleExportTransaction(entity) {
             .estimateGas({ gas: 450000 })
         );
 
-      var totalGas = new BigNumber(gasEST + gasESTFee);
+      var totalGas = new BigNumber(gasEST);
       console.log(
-        'Fee Gas EST + Payment Gas EST = Total Gas EST',
-        gasESTFee,
+        'Payment Gas EST = Total Gas EST',
         gasEST,
         totalGas
       );
@@ -348,38 +329,6 @@ async function handleExportTransaction(entity) {
               );
               return;
             });
-
-          /* Send Fee */
-          var txParamsFee = {
-            nonce: web3.utils.toHex(nonce),
-            gasPrice: web3.utils.toHex(gasPrice),
-            gasLimit: gasESTFee,
-            from: wallet.address,
-            to: contractObj._address,
-            value: '0x00',
-            chainId: config.chainId,
-            data: txDataFee
-          };
-
-          var txFee = new Tx(txParamsFee);
-          txFee.sign(privateKey);
-
-          var serializedTxFee = txFee.serialize();
-
-          web3.eth
-            .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
-            .on('transactionHash', hash => {
-              // should update mongo here
-              console.log('transactionHash for tx Fee', hash);
-            })
-            .on('recipet', recipet => {
-              // update mongo here
-              console.log('recipet for tx fee', recipet);
-            })
-            .on('error', err => {
-              console.log('sendSignedTransaction for tx fee err', err);
-            });
-          /* Send Fee End */
 
           var txParams = {
             nonce: web3.utils.toHex(nonce + 1),
