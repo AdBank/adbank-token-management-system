@@ -331,7 +331,7 @@ async function handleExportTransaction(entity) {
             });
 
           var txParams = {
-            nonce: web3.utils.toHex(nonce + 1),
+            nonce: web3.utils.toHex(nonce),
             gasPrice: web3.utils.toHex(gasPrice),
             gasLimit: gasEST,
             from: wallet.address,
