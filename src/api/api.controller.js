@@ -696,6 +696,8 @@ export async function batchRequest(req, res) {
               var gas = newItems[i].gas;
               var gasFee = newItems[i].gasFee;
 
+              var toWallet = newItems[i].toWallet;
+
               var txData = contractObj.methods
                 .transfer(toWallet.address, tokenAmount)
                 .encodeABI();
