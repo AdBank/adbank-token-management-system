@@ -1,0 +1,43 @@
+version: '3'
+
+networks:
+  frontend:
+    driver: ${NETWORKS_DRIVER}
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+services:
+  gnatsd:
+    image: 'nats:1.1.0'
+    ports:
+      - "4222:4222"
+    hostname: gnatsd
+    networks:
+      - frontend
+      - backend
+  tms:
+    image: "adbank-token-management-system:latest"
+    ports:
+     - "8080:8080"
+    environment:
+      - IP=${IP}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PW=${MONGODB_PW}
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_PORT=${MONGODB_PORT}
+      - MONGODB_DB=${MONGODB_DB}
+      - MONGODB_ARGS=${MONGODB_ARGS}
+      - ETH_RPC_URI=${ETH_RPC_URI}
+      - CONTRACT_OWNER_ADDRESS=${CONTRACT_OWNER_ADDRESS}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - CONTRACT_DECIMALS=${CONTRACT_DECIMALS}
+      - NETWORK_WALLET_ADDRESS=${NETWORK_WALLET_ADDRESS}
+      - NETWORK_WALLET_PK=${NETWORK_WALLET_PK}
+      - REVENUE_WALLET=${REVENUE_WALLET}
+      - CHAIN_ID=${CHAIN_ID}
+      - KEY=${KEY}
+      - NATS_SERVERS=${NATS_SERVERS}
+      - NATS_SERVER_URL=${NATS_SERVERS}
+    networks:
+      - frontend
+      - backend
