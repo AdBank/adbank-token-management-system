@@ -8,7 +8,9 @@ import NATS from 'nats';
 import config from '../../config/environment';
 import TransactionEvents from './transaction.events';
 var servers = config.nats.servers;
-const nats = NATS.connect({ servers, json: true });
+var url = config.nats.url;
+console.log('nats url', url);
+const nats = NATS.connect({ url, port: 4222, json: true });
 
 // currentServer is the URL of the connected server.
 console.log(`[NATS] Connected to ${nats.currentServer.url.host}`);
@@ -29,7 +31,7 @@ export function register() {
 
 function createListener(event, nats) {
   return function(doc) {
-    console.log(`transaction.save.${doc.account}`, doc);
+    // console.log(`transaction.save.${doc.account}`, doc);
     nats.publish(`transaction.save.${doc.account}`, doc);
     // spark.emit(event, doc);
   };

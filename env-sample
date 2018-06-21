@@ -1,0 +1,22 @@
+###########################################################
+###################### General Setup ######################
+###########################################################
+
+IP=0.0.0.0
+PORT=8080
+MONGODB_USER=test
+MONGODB_PW=abc123
+MONGODB_URI=mongo
+MONGODB_PORT=27017
+MONGODB_DB=adbank-tms-prod
+MONGODB_ARGS=
+ETH_RPC_URI=https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq
+CONTRACT_OWNER_ADDRESS=0x69c215f4d9940948c257ad45a28032b4b3d5cafd
+CONTRACT_ADDRESS=0xf3399d84571fac96eed37cd4b50baee807b67360
+CONTRACT_DECIMALS=18
+NETWORK_WALLET_ADDRESS=0xf3399d84571fac96eed37cd4b50baee807b67360
+NETWORK_WALLET_PK=f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307
+REVENUE_WALLET=0xf3399d84571fac96eed37cd4b50baee807b67360
+CHAIN_ID=3
+KEY=&6831IlYmK33d
+NATS_SERVERS=nats://nats-nodeport.nats.svc.cluster.local:4222

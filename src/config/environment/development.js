@@ -46,9 +46,8 @@ module.exports = {
   // seed the db in development mode
 
   nats: {
-    servers: process.env.NATS_SERVERS || [
-      'nats://nats.nats.svc.cluster.local:4222'
-    ]
+    servers: process.env.NATS_SERVERS || ['nats://gnatsd:4222'],
+    url: process.env.NATS_SERVER_URL || 'nats://gnatsd:4222'
   },
   seedDB: true
 };
