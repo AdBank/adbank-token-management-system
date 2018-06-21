@@ -591,7 +591,7 @@ export async function batchRequest(req, res) {
       for(var i in items) {
         // console.log('i', items[i]);
         /* Begin For */
-        if(items[i].action != 'spent') {
+        if(items[i].action != 'spent' && items[i].action != 'Spent') {
           // If it is import or export
           continue;
         }
