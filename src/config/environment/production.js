@@ -7,51 +7,39 @@
 module.exports = {
   ip: process.env.IP || '0.0.0.0',
 
-  port: process.env.PORT || 8080,
+  port: parseInt(process.env.PORT, 10),
   mongo: {
-    username: process.env.MONGODB_USER || '',
-    password: process.env.MONGODB_PW || '',
-    uri: process.env.MONGODB_URI || 'mongo',
-    port: process.env.MONGODB_PORT || 27017,
-    db: process.env.MONGODB_DB || 'adbank-tms-prod',
-    args: process.env.MONGODB_ARGS || ''
+    username: process.env.MONGODB_USER,
+    password: process.env.MONGODB_PW,
+    uri: process.env.MONGODB_URI,
+    port: parseInt(process.env.MONGODB_PORT, 10),
+    db: process.env.MONGODB_DB,
+    args: process.env.MONGODB_ARGS
   },
   web3: {
     rpc: {
-      provider:
-        process.env.ETH_RPC_URI
-        || 'https://ropsten.infura.io/4j5O9eS3JbK1oetIOMTq'
+      provider: process.env.ETH_RPC_URI
     }
   },
   contract: {
-    ownerAddress:
-      process.env.CONTRACT_OWNER_ADDRESS
-      || '0xf3399d84571fac96eed37cd4b50baee807b67360',
-    address:
-      process.env.CONTRACT_ADDRESS
-      || '0x69c215f4d9940948c257ad45a28032b4b3d5cafd', // Address where contract is deployed
-
-    // Contract Owner Address
-    decimals: 18 // Token decimals
+    ownerAddress: process.env.CONTRACT_OWNER_ADDRESS, // Contract Owner Address
+    address: process.env.CONTRACT_ADDRESS, // Address where contract is deployed
+    decimals: parseInt(process.env.CONTRACT_DECIMALS, 10) || parseInt(18, 10) // Token decimals
   },
   networkWallet: {
     // Gas Holder
-    address:
-      process.env.NETWORK_WALLET_ADDRESS
-      || '0xf3399d84571fac96eed37cd4b50baee807b67360', // Typically used to send eth to internal wallet
-    privateKey:
-      process.env.NETWORK_WALLET_PK
-      || 'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Network Wallet private key ( You can use contract owner as master eth account )
+    address: process.env.NETWORK_WALLET_ADDRESS, // Typically used to send eth to internal wallet
+    privateKey: process.env.NETWORK_WALLET_PK // Network Wallet private key ( You can use contract owner as master eth account )
   },
   revenueWallet: {
-    address:
-      process.env.REVENUE_WALLET || '0xf3399d84571fac96eed37cd4b50baee807b67360'
+    address: process.env.REVENUE_WALLET
   },
-  chainId: process.env.CHAINID || 3, // Network Chain ID,
-  key: process.env.KEY || '&6831IlYmK33d', // Security Key
-  percent: 25, // Fee Percentage
+  chainId: parseInt(process.env.CHAIN_ID, 10), // Network Chain ID,
+  key: process.env.KEY, // Security Key
+  percent: parseInt(25, 10), // Fee Percentage
   nats: {
-    servers: ['nats://nats-nodeport.nats.svc.cluster.local:4222']
+    servers: process.env.NATS_SERVERS, // nats cluster
+    url: process.env.NATS_SERVER_URL // nats single instance
   },
   seedDB: false
 };
