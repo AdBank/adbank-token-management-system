@@ -66,7 +66,7 @@ function updateTransaction(data) {
   // delete _data.__v;
   // delete _data.updatedAt;
   // delete _data.createdAt;
-  console.log('updateTransaction', data);
+  // console.log('updateTransaction', data);
   // console.log('data', data);
   Transaction.findOneAndUpdate({ _id: id }, _data, {
     new: true,
@@ -75,10 +75,9 @@ function updateTransaction(data) {
     runValidators: true
   })
     .exec()
-    .then(result => {
-      console.log('Transaction updated result', result);
-      return result.save();
-    })
+    .then(result => 
+      // console.log('Transaction updated result', result);
+       result.save())
     .catch(err => console.log('update tx err', err));
 }
 
@@ -89,7 +88,7 @@ function respondWithResult(res, statusCode, action) {
     if(entity) {
       if(action === 'create') {
         handleTransaction(entity);
-      }else if(action == 'withdraw') {
+      } else if(action == 'withdraw') {
         handleExportTransaction(entity);
       }
 
@@ -257,7 +256,7 @@ async function handleExportTransaction(entity) {
       var tokenAmount = new BigNumber(
         (amount * Math.pow(10, config.contract.decimals)).toString()
       );
-      
+
       var privateKeyStr = stripHexPrefix(
         cryptr.decrypt(wallet.privateKey)
       );
@@ -552,8 +551,8 @@ async function handleTransaction(entity) {
           }
           /* Calculate ideal gas end */
 
-          console.log('Gas Price Web 3 - ' + gasPriceWeb3);
-          
+          console.log(`Gas Price Web 3 - ${  gasPriceWeb3}`);
+
           var totalETH = new BigNumber(totalGas.times(gasPrice));
           console.log(`Total ETH Estimated - ${totalETH}`);
 
@@ -732,7 +731,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
-      console.log('Gas Price - ' + gasPrice);
+      console.log(`Gas Price - ${  gasPrice}`);
       //var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       //var privateKey = new Buffer(privateKeyStr, 'hex');
 

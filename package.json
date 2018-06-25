@@ -22,8 +22,8 @@
     "rimraf": "rimraf"
   },
   "dependencies": {
-    "@std/esm": "^0.26.0",
-    "bignumber.js": "^6.0.0",
+    "@godaddy/terminus": "^2.3.0",
+    "bignumber.js": "^7.0.0",
     "body-parser": "^1.18.2",
     "composable-middleware": "^0.3.0",
     "compression": "^1.7.2",
