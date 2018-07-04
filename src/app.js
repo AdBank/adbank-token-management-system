@@ -1,15 +1,14 @@
 'use strict';
 // Dependencies
 var mongoose = require('mongoose');
-var bodyParser = require('body-parser');
 var express = require('express');
-var morgan = require('morgan');
-var errorHandler = require('errorhandler');
 var http = require('http');
 // Configs
 // var config = require(`./config/${process.env.NODE_ENV || 'dev'}.js`);
 const config = require('./config/environment');
 import seedDatabaseIfNeeded from './config/seed';
+import terminus from '@godaddy/terminus';
+import nats from './config/nats';
 // set the uri to mongo depending on environment
 let uri = '';
 if(process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
@@ -28,43 +27,13 @@ mongoose.connect(uri);
 var app = express();
 var server = http.createServer(app);
 
-// // web3 configuration
-// app.web3 = config.web3;
-
-// // Contract Configuration
-// app.contract = {};
-// // app.contract.abi = require(`../config/${config.contract.abi}`);
-// app.contract.address = config.contract.address;
-// app.contract.owner_address = config.contract.owner_address;
-// app.contract.decimals = config.contract.decimals;
-
-// // Wallet Configuration.
-// app.networkWallet = {};
-// app.networkWallet.address = config.networkWallet.address;
-// app.networkWallet.privateKey = config.networkWallet.privateKey;
-
-// app.revenueWallet = {};
-// app.revenueWallet.address = config.revenueWallet.address;
-
-// // ChainID Configuration
-// app.chainId = config.chainId;
-
-// // Fee Percentage
-// app.percent = config.percent;
-
-// // App Key
-// app.key = config.key;
-
-// For parsing HTTP responses
-
-//. require('./api')(app);
 require('./config/express').default(app);
 require('./routes').default(app);
 
 // Start server
 function startServer() {
   // Start the app with listen and a port number
-  app.tms = server.listen(config.port, config.ip, () => {
+  app.api = server.listen(config.port, config.ip, () => {
     console.log(
       `[Express] ${config.name} server listening on ${
         config.port
@@ -73,7 +42,40 @@ function startServer() {
   });
 }
 
-var producer = require('./api/transaction/transaction.socket').register;
+// var producer = require('./api/transaction/transaction.socket').register;
+require('./api/transaction/transaction.socket').register;
+
+// graceful shutdown before shutdown
+function onSignal() {
+  console.log('[express] server is starting cleanup');
+  return Promise.all([
+    // Add any promises here for processes that need to be closed before the tests can finish
+    new Promise(resolve => {
+      console.log('[mongo] client shutting down');
+      mongoose.connection.close(resolve);
+    }),
+    new Promise(resolve => {
+      console.log('[express] api shutting down');
+      app.api.close(resolve);
+    }),
+    new Promise(resolve => {
+      console.log('[nats] shutting down');
+      nats.flush(() => resolve);
+    })
+  ]);
+}
+
+// config for terminus
+const options = {
+  logger: console.log,
+  signal: 'SIGINT',
+  healthChecks: {
+    '/healthcheck': Promise.resolve()
+  },
+  onSignal
+};
+// mke node.js k8s friendly
+terminus(server, options);
 
 seedDatabaseIfNeeded()
   .then(startServer)

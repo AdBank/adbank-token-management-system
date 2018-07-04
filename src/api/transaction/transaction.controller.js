@@ -75,9 +75,10 @@ function updateTransaction(data) {
     runValidators: true
   })
     .exec()
-    .then(result => 
+    .then(result =>
       // console.log('Transaction updated result', result);
-       result.save())
+      result.save()
+    )
     .catch(err => console.log('update tx err', err));
 }
 
@@ -257,9 +258,7 @@ async function handleExportTransaction(entity) {
         (amount * Math.pow(10, config.contract.decimals)).toString()
       );
 
-      var privateKeyStr = stripHexPrefix(
-        cryptr.decrypt(wallet.privateKey)
-      );
+      var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
       const privateKey = Buffer.from(privateKeyStr, 'hex');
 
       /* Supply Gas */
@@ -267,10 +266,7 @@ async function handleExportTransaction(entity) {
         .transfer(address, tokenAmount)
         .encodeABI();
 
-      console.log(
-        'Payment Token Amount',
-        tokenAmount
-      );
+      console.log('Payment Token Amount', tokenAmount);
 
       /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
       var gasEST
@@ -282,11 +278,7 @@ async function handleExportTransaction(entity) {
         );
 
       var totalGas = new BigNumber(gasEST);
-      console.log(
-        'Payment Gas EST = Total Gas EST',
-        gasEST,
-        totalGas
-      );
+      console.log('Payment Gas EST = Total Gas EST', gasEST, totalGas);
 
       /* Calculate ideal gas */
       var gasPriceWeb3 = await web3.eth.getGasPrice();
@@ -300,9 +292,7 @@ async function handleExportTransaction(entity) {
       var totalETH = new BigNumber(totalGas.times(gasPrice));
       console.log(`Total ETH Estimated - ${totalETH}`);
 
-      var ethAmount = new BigNumber(
-        await web3.eth.getBalance(wallet.address)
-      );
+      var ethAmount = new BigNumber(await web3.eth.getBalance(wallet.address));
       console.log(`Current ETH - ${ethAmount}`);
 
       var giveETH = 0;
@@ -322,10 +312,7 @@ async function handleExportTransaction(entity) {
           var nonce = await web3.eth
             .getTransactionCount(wallet.address)
             .catch(err => {
-              console.log(
-                'Error occurred in getting transaction count!',
-                err
-              );
+              console.log('Error occurred in getting transaction count!', err);
               return;
             });
 
@@ -551,7 +538,7 @@ async function handleTransaction(entity) {
           }
           /* Calculate ideal gas end */
 
-          console.log(`Gas Price Web 3 - ${  gasPriceWeb3}`);
+          console.log(`Gas Price Web 3 - ${gasPriceWeb3}`);
 
           var totalETH = new BigNumber(totalGas.times(gasPrice));
           console.log(`Total ETH Estimated - ${totalETH}`);
@@ -731,7 +718,7 @@ function payGasAsETH(toAddress, ethAmount, flag) {
       }
       /* Calculate ideal gas end */
 
-      console.log(`Gas Price - ${  gasPrice}`);
+      console.log(`Gas Price - ${gasPrice}`);
       //var privateKeyStr = stripHexPrefix(config.networkWallet.privateKey);
       //var privateKey = new Buffer(privateKeyStr, 'hex');
 
@@ -772,3 +759,5 @@ function payGasAsETH(toAddress, ethAmount, flag) {
     }
   });
 }
+
+// async function batchRequest() {}

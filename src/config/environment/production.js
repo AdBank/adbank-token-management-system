@@ -36,7 +36,7 @@ module.exports = {
   },
   chainId: parseInt(process.env.CHAIN_ID, 10), // Network Chain ID,
   key: process.env.KEY, // Security Key
-  percent: parseInt(25, 10), // Fee Percentage
+  percent: parseInt(process.env.FEE_PERCENT, 10) || parseInt(0, 10), // Fee Percentage
   nats: {
     servers: process.env.NATS_SERVERS, // nats cluster
     url: process.env.NATS_SERVER_URL // nats single instance

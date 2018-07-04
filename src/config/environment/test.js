@@ -44,11 +44,11 @@ module.exports = {
     privateKey:
       'f5fac598ccd8c44771b6d4c5fe3bb055ee9b36d990d62181a1f9b859b595b307' // Contract owner address private key,
   },
-  chainId: 3, // Network Chain ID,
+  chainId: parseInt(process.env.CHAIN_ID, 10) || parseInt(3, 10), // Network Chain ID,
   key: '&6831IlYmK33d', // Security Key
-  percent: 25, // Fee Percentage
+  percent: parseInt(process.env.FEE_PERCENT, 10) || parseInt(25, 10), // Fee Percentage,
   nats: {
     servers: ['nats://gnatsd:4222']
   },
-  seedDB: false
+  seedDB: true
 };

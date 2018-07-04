@@ -43,14 +43,21 @@ export default function seedDatabaseIfNeeded() {
           address: '0xC8443418c1D1a74b4984E60a31fA85fdD8328c31',
           privateKey:
             'bca5bfea37978f48ea407312470e147ef215fe68c3de4f100fd9c58247878e9074ce7762111cc97933217c3efdd50c4ac04ed6b1e69a4d0f016375563b2b75ef'
+        },
+
+        {
+          _id: '5b3d27d808f3ec784b1d9548',
+          userId: '3',
+          address: '0x570D675E696d54f3815b5aD13639893C3a87ab67',
+          privateKey:
+            '8eb150cb35856dc5281e9da1ca6b3d20ed4b75ec568b5e1397c5c52b418467071757b65bb22415156841edfbf2ac3d95096bf44eada98a03908de1fdd995af4b584c0550d8f8d10d4fad977db7754eec'
         }
       )
         .then(() => console.log('[SEED] finished populating wallets'))
         .catch(err => console.log('[SEED] error populating wallets', err))
     );
-
-  let tansactionPromise = Transaction.find({})
-    .remove();
+  // promises.push(walletPromise);
+  let tansactionPromise = Transaction.find({}).remove();
   // .then(() =>
   //   Transaction.create(
   //     {

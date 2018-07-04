@@ -42,7 +42,7 @@ module.exports = {
   //chainId: 1337, // Network Chain ID,
   chainId: 3,
   key: '&6831IlYmK33d', // Security Key
-  percent: 25, // Fee Percentage,
+  percent: parseInt(process.env.FEE_PERCENT, 10) || parseInt(0, 10), // Fee Percentage
   // seed the db in development mode
 
   nats: {

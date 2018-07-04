@@ -519,6 +519,8 @@ export async function batchWallet(req, res) {
 }
 
 export async function batchRequest(req, res) {
+  console.log('req.body', req.body);
+
   if(!req.body.fromWalletId) {
     return res
       .status(400)
@@ -757,7 +759,7 @@ export async function batchRequest(req, res) {
                 .on('transactionHash', hash => {
                   processed++;
 
-                  console.log('Processed - ' + processed);
+                  console.log(`Processed - ${processed}`);
                   console.log('batchRequest item transactionHash', hash);
 
                   newItems[processed - 1].status = 'processed';
@@ -775,7 +777,7 @@ export async function batchRequest(req, res) {
                     amount: newItems[processed - 1].amount,
                     action: 'spent',
                     status: 'Complete',
-                    hash: hash
+                    hash
                   })
                     .then(result => {
                       console.log('Transaction create result', result);
@@ -1083,7 +1085,7 @@ export async function batchRequestBackup(req, res) {
                       amount: newItems[processed - 1].amount,
                       action: 'spent',
                       status: 'Complete',
-                      hash: hash
+                      hash
                     })
                       .then(result => {
                         console.log('Transaction create result', result);
