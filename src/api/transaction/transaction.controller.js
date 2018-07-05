@@ -335,20 +335,16 @@ async function handleExportTransaction(entity) {
           var sent = false;
           web3.eth
             .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-            .on('transactionHash', function(hash) {
-              console.log(
-                'sendSignedTransaction success',
-                wallet._id,
-                wallet._id,
-                tokenAmount,
-                hash,
-                'spent'
+            .once('transactionHash', hash => {
+              console.info(
+                'transactionHash',
+                `https://ropsten.etherscan.io/tx/${hash}`
               );
               entity.status = 'Pending';
               entity.hash = hash;
               return updateTransaction(entity);
             })
-            .on('receipt', receipt => {
+            .once('receipt', receipt => {
               console.log('receipt', receipt);
               Receipt.create(receipt).then(recipetResult => {
                 entity.status = 'Complete';
@@ -357,6 +353,10 @@ async function handleExportTransaction(entity) {
               });
               // we should persist these to keep a papertrail.
             })
+            .on('confirmation', (confirmationNumber, receipt) => {
+              console.info('confirmation', confirmationNumber, receipt);
+            })
+
             .on('error', err => {
               entity.status = 'Error';
               console.log('sendSignedTransaction err', err);
@@ -623,48 +623,19 @@ async function handleTransaction(entity) {
               var sent = false;
               web3.eth
                 .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-                .on('transactionHash', function(hash) {
+                .once('transactionHash', hash => {
+                  console.info(
+                    'transactionHash',
+                    `https://ropsten.etherscan.io/tx/${hash}`
+                  );
                   var fromBalance
                     = parseFloat(balance) - parseFloat(totalAmount);
                   toBalance = parseFloat(toBalance) + parseFloat(amount);
-                  console.log(
-                    'sendSignedTransaction success',
-                    fromWallet._id,
-                    toWallet._id,
-                    tokenAmount,
-                    hash,
-                    'spent'
-                  );
                   entity.status = 'Pending';
                   entity.hash = hash;
                   return updateTransaction(entity);
-
-                  // update mongo here
-                  // do this as Transaction
-                  // History.create({
-                  //   from: fromWallet._id,
-                  //   to: toWallet._id,
-                  //   amount: tokenAmount,
-                  //   hash,
-                  //   action: 'spent'
-                  // })
-                  //   .then(result =>
-                  //     res.status(201).send({
-                  //       status: true,
-                  //       hash,
-                  //       fromBalance,
-                  //       toBalance
-                  //     })
-                  //   )
-                  //   .catch(err => {
-                  //     console.log('err', err);
-                  //     return res.status(400).send({
-                  //       status: false,
-                  //       msg: 'Error occurred in saving history!'
-                  //     });
-                  //   });
                 })
-                .on('receipt', receipt => {
+                .once('receipt', receipt => {
                   console.log('receipt', receipt);
                   Receipt.create(receipt).then(recipetResult => {
                     entity.status = 'Complete';
@@ -672,6 +643,9 @@ async function handleTransaction(entity) {
                     return updateTransaction(entity);
                   });
                   // we should persist these to keep a papertrail.
+                })
+                .on('confirmation', (confirmationNumber, receipt) => {
+                  console.info('confirmation', confirmationNumber, receipt);
                 })
                 .on('error', err => {
                   entity.status = 'Error';
