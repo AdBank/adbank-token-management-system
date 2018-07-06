@@ -4,16 +4,15 @@
 
 'use strict';
 
-import NATS from 'nats';
-import config from '../../config/environment';
+// import NATS from 'nats';
+// import config from '../../config/environment';
 import TransactionEvents from './transaction.events';
-var servers = config.nats.servers;
-var url = config.nats.url;
-console.log('nats url', url);
-const nats = NATS.connect({ url, port: 4222, json: true });
+// var servers = config.nats.servers;
+// var url = config.nats.url;
+import nats from '../../config/nats';
 
 // currentServer is the URL of the connected server.
-console.log(`[NATS] Connected to ${nats.currentServer.url.host}`);
+// console.log(`[NATS] Connected to ${nats.currentServer.url.host}`);
 
 // Model events to emit
 var events = ['save', 'remove'];
@@ -29,7 +28,7 @@ export function register() {
   }
 }
 
-function createListener(event, nats) {
+function createListener(event) {
   return function(doc) {
     // console.log(`transaction.save.${doc.account}`, doc);
     nats.publish(`transaction.save.${doc.account}`, doc);

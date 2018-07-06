@@ -56,20 +56,23 @@ import nats from '../config/nats';
 // }
 
 describe('Batch Transaction API:', () => {
-  var transaction;
-
-  // Clear transactions before testing
-  //before(() =>
-  // Transaction.remove()
-  // .then(() => genWallet())
-  // .catch(err => console.log('before err', err))
-  //);
-
   // Clear transactions after testing
   after(() => Transaction.remove());
 
   describe('POST /batchRequest', () => {
-    it('should respond with a transaction when authenticated', done => {
+    it('should respond with a batch transaction when authenticated', done => {
+      let completeCount = 0;
+      // sets the listener to capture events from tms only for this specific account though.
+      nats.subscribe(`transaction.save.${config.account}`, msg => {
+        console.log('msg', msg);
+        if(msg.status === 'Complete') {
+          completeCount++;
+        }
+        if(completeCount === 2) {
+          done();
+        }
+      });
+
       request(app)
         .post('/batchRequest')
         .set('x-api-key', `${config.key}`)
@@ -85,12 +88,7 @@ describe('Batch Transaction API:', () => {
             console.log('err', err);
             done(err);
           }
-
-          // sets the listener to capture events from tms only for this specific account though.
-          nats.subscribe(`transaction.save.${config.account}`, msg => {
-            console.log('msg', msg);
-          });
-
+          console.log('res', res.body);
           // done();
         });
     }).timeout(100000);

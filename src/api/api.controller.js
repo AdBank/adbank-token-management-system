@@ -1,15 +1,17 @@
+'use strict';
+
 // const mongoose = require('mongoose');
 // const bcrypt = require('bcrypt');
 const Web3 = require('web3');
 const Cryptr = require('cryptr');
 const Wallet = require('./wallet/wallet.model');
-const History = require('./history/history.model');
+// const History = require('./history/history.model');
 
 const BigNumber = require('bignumber.js');
 const net = require('net');
 const Tx = require('ethereumjs-tx');
 const stripHexPrefix = require('strip-hex-prefix');
-const ethereumAddress = require('ethereum-address');
+// const ethereumAddress = require('ethereum-address');
 import Transaction from './transaction/transaction.model';
 import config from '../config/environment';
 import abi from '../config/abi.json';
@@ -34,49 +36,49 @@ function completeTransactionByHash(hash) {
     .catch(err => console.log('update tx err', err));
 }
 
-function updateTransaction(data) {
-  let id = data._id;
-  let _data = {
-    account: data.account,
-    txId: data.txId,
-    from: data.from,
-    to: data.to,
-    amount: data.amount,
-    action: data.action,
-    status: data.status,
-    hash: data.hash || ''
-  };
-  // console.log('id', id);
-  // Reflect.deleteProperty(data, '_id');
-  // // Reflect.deleteProperty(data, 'txId');
-  // Reflect.deleteProperty(data, 'createdAt');
-  // Reflect.deleteProperty(data, 'updatedAt');
-  // Reflect.deleteProperty(data, '__v');
-  // delete _data._id;
-  // delete _data.__v;
-  // delete _data.updatedAt;
-  // delete _data.createdAt;
-  // console.log('updateTransaction', data);
-  // console.log('data', data);
-  Transaction.findOneAndUpdate({ _id: id }, _data, {
-    new: true,
-    upsert: true,
-    setDefaultsOnInsert: true,
-    runValidators: true
-  })
-    .exec()
-    .then(result =>
-      // console.log('Transaction updated result', result);
-      result.save()
-    )
-    .catch(err => console.log('update tx err', err));
-}
+// function updateTransaction(data) {
+//   let id = data._id;
+//   let _data = {
+//     account: data.account,
+//     txId: data.txId,
+//     from: data.from,
+//     to: data.to,
+//     amount: data.amount,
+//     action: data.action,
+//     status: data.status,
+//     hash: data.hash || ''
+//   };
+//   // console.log('id', id);
+//   // Reflect.deleteProperty(data, '_id');
+//   // // Reflect.deleteProperty(data, 'txId');
+//   // Reflect.deleteProperty(data, 'createdAt');
+//   // Reflect.deleteProperty(data, 'updatedAt');
+//   // Reflect.deleteProperty(data, '__v');
+//   // delete _data._id;
+//   // delete _data.__v;
+//   // delete _data.updatedAt;
+//   // delete _data.createdAt;
+//   // console.log('updateTransaction', data);
+//   // console.log('data', data);
+//   Transaction.findOneAndUpdate({ _id: id }, _data, {
+//     new: true,
+//     upsert: true,
+//     setDefaultsOnInsert: true,
+//     runValidators: true
+//   })
+//     .exec()
+//     .then(result =>
+//       // console.log('Transaction updated result', result);
+//       result.save()
+//     )
+//     .catch(err => console.log('update tx err', err));
+// }
 
 // this is always going to be te same no need to drag it through envVars
-var flag = true; // System flag
+// var flag = true; // System flag
 
 var cryptr = new Cryptr('AdBankTokenNetwork');
-var client = new net.Socket();
+// var client = new net.Socket();
 
 /* Web3 Initialization */
 var web3 = new Web3(new Web3.providers.HttpProvider(config.web3.rpc.provider));
@@ -160,169 +162,119 @@ function handleWalletDB(items) {
       Promise.reject(err);
     });
 }
-
-function payGasAsETH(toAddress, ethAmount, flag) {
+function payGasAsETH(toAddress, ethAmount) {
+  //function payGasAsETH(toAddress, ethAmount, flag) {
   return new Promise(async (resolve, reject) => {
-    if(!flag) resolve();
-    else {
-      /* Calculate ideal gas */
-      var gasPriceWeb3 = await web3.eth.getGasPrice();
-      var gasPrice = new BigNumber(gasPriceGlobal);
+    // if(!flag) resolve();
+    // else {
+    /* Calculate ideal gas */
+    var gasPriceWeb3 = await web3.eth.getGasPrice();
+    var gasPrice = new BigNumber(gasPriceGlobal);
 
-      if(gasPrice.isLessThan(gasPriceWeb3)) {
-        gasPrice = gasPriceWeb3;
-      }
-      /* Calculate ideal gas end */
-
-      const privateKey = Buffer.from(config.networkWallet.privateKey, 'hex');
-
-      var nonce = await web3.eth
-        .getTransactionCount(config.networkWallet.address)
-        .catch(error => {
-          console.log('getTransactionCount error', error);
-          reject();
-        });
-
-      var txParams = {
-        nonce: web3.utils.toHex(nonce),
-        gasPrice: web3.utils.toHex(gasPrice),
-        gasLimit: web3.utils.toHex(400000),
-        from: config.networkWallet.address,
-        to: toAddress,
-        value: web3.utils.toHex(ethAmount),
-        chainId: config.chainId
-      };
-
-      var tx = new Tx(txParams);
-      tx.sign(privateKey);
-
-      var serializedTx = tx.serialize();
-
-      web3.eth
-        .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-        .then(receipt => {
-          console.log('sendSignedTransaction receipt', receipt);
-          resolve();
-        })
-        .catch(err => {
-          console.log('sendSignedTransaction error', err);
-          reject(err);
-        });
+    if(gasPrice.isLessThan(gasPriceWeb3)) {
+      gasPrice = gasPriceWeb3;
     }
+    /* Calculate ideal gas end */
+
+    const privateKey = Buffer.from(config.networkWallet.privateKey, 'hex');
+
+    var nonce = await web3.eth
+      .getTransactionCount(config.networkWallet.address)
+      .catch(error => {
+        console.log('getTransactionCount error', error);
+        reject();
+      });
+
+    var txParams = {
+      nonce: web3.utils.toHex(nonce),
+      gasPrice: web3.utils.toHex(gasPrice),
+      gasLimit: web3.utils.toHex(400000),
+      from: config.networkWallet.address,
+      to: toAddress,
+      value: web3.utils.toHex(ethAmount),
+      chainId: config.chainId
+    };
+
+    var tx = new Tx(txParams);
+    tx.sign(privateKey);
+
+    var serializedTx = tx.serialize();
+
+    web3.eth
+      .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
+      .then(receipt => {
+        console.log('sendSignedTransaction receipt', receipt);
+        resolve();
+      })
+      .catch(err => {
+        console.log('sendSignedTransaction error', err);
+        reject(err);
+      });
+    //}
   });
 }
 
-// added for health check
-export async function index(req, res) {
-  return res.sendStatus(200);
-}
+// export async function ownerTokenBalance(req, res) {
+//   contractObj.methods
+//     .balanceOf(config.contract.ownerAddress)
+//     .call({ from: config.contract.ownerAddress })
+//     .then(function(result) {
+//       var balance = result / Math.pow(10, config.contract.decimals);
 
-export async function system(req, res) {
-  // var key = '';
-  // if(req.headers['x-api-key']) key = req.headers['x-api-key'];
+//       return res.send({ status: true, balance });
+//     })
+//     .catch(err => res.status(400).send({ status: false, msg: err }));
+// }
 
-  // if(key != config.key) {
-  //   return res.send({ status: false, msg: 'You are not authorised!' });
-  // }
+// export async function holderTokenBalance(req, res) {
+//   if(!req.body.address) {
+//     return res.send({ status: false, msg: 'Address is missing!' });
+//   }
 
-  if(!req.body.action) {
-    return res.send({ status: false, msg: 'Undefined action!' });
-  }
+//   var address = req.body.address;
 
-  var action = req.body.action;
+//   if(!ethereumAddress.isAddress(address)) {
+//     return res.send({ status: false, msg: 'Invalid address!' });
+//   }
 
-  if(action != 'on' && action != 'off') {
-    return res.send({ status: false, msg: 'Undefined action!' });
-  }
+//   contractObj.methods
+//     .balanceOf(address)
+//     .call({ from: config.contract.ownerAddress })
+//     .then(function(result) {
+//       var balance = result / Math.pow(10, config.contract.decimals);
 
-  if(action == 'on') {
-    flag = true;
-    return res.send({ status: true, msg: 'System is turned on!' });
-  } else {
-    flag = false;
-    return res.send({ status: true, msg: 'System is turned off!' });
-  }
-}
-export async function ownerTokenBalance(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
+//       return res.send({ status: true, balance });
+//     })
+//     .catch(err => res.status(400).send({ status: false, msg: err }));
+// }
+// export async function walletTokenBalance(req, res) {
+//   if(!req.body.walletId) {
+//     return res.send({ status: false, msg: 'Wallet ID is missing!' });
+//   }
 
-  contractObj.methods
-    .balanceOf(config.contract.ownerAddress)
-    .call({ from: config.contract.ownerAddress })
-    .then(function(result) {
-      var balance = result / Math.pow(10, config.contract.decimals);
+//   var walletId = req.body.walletId;
+//   if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
+//     return res.send({ status: false, msg: 'Invalid wallet id!' });
+//   }
 
-      return res.send({ status: true, balance });
-    })
-    .catch(err => res.status(400).send({ status: false, msg: err }));
-}
-export async function holderTokenBalance(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
+//   var wallet = await Wallet.findOne({ _id: walletId });
 
-  if(!req.body.address) {
-    return res.send({ status: false, msg: 'Address is missing!' });
-  }
+//   if(!wallet) {
+//     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+//   }
 
-  var address = req.body.address;
+//   contractObj.methods
+//     .balanceOf(wallet.address)
+//     .call({ from: config.contract.ownerAddress })
+//     .then(result => {
+//       var balance = result / Math.pow(10, config.contract.decimals);
 
-  if(!ethereumAddress.isAddress(address)) {
-    return res.send({ status: false, msg: 'Invalid address!' });
-  }
-
-  contractObj.methods
-    .balanceOf(address)
-    .call({ from: config.contract.ownerAddress })
-    .then(function(result) {
-      var balance = result / Math.pow(10, config.contract.decimals);
-
-      return res.send({ status: true, balance });
-    })
-    .catch(err => res.status(400).send({ status: false, msg: err }));
-}
-export async function walletTokenBalance(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
-
-  if(!req.body.walletId) {
-    return res.send({ status: false, msg: 'Wallet ID is missing!' });
-  }
-
-  var walletId = req.body.walletId;
-  if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
-    return res.send({ status: false, msg: 'Invalid wallet id!' });
-  }
-
-  var wallet = await Wallet.findOne({ _id: walletId });
-
-  if(!wallet) {
-    return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
-  }
-
-  contractObj.methods
-    .balanceOf(wallet.address)
-    .call({ from: config.contract.ownerAddress })
-    .then(result => {
-      var balance = result / Math.pow(10, config.contract.decimals);
-
-      return res.status(200).send({ status: true, balance });
-    })
-    .catch(err => res.status(400).send({ status: false, msg: err }));
-}
+//       return res.status(200).send({ status: true, balance });
+//     })
+//     .catch(err => res.status(400).send({ status: false, msg: err }));
+// }
 
 export async function wallet(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
-
   if(!req.body.userId) {
     return res.send({ status: false, msg: 'User is missing!' });
   }
@@ -369,178 +321,178 @@ export async function wallet(req, res) {
     }
   );
 }
-export async function withdraw(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
+// export async function withdraw(req, res) {
+//   // /* Auth Begin */
+//   // var msg = checkAuth(req);
+//   // if(msg != '') return res.send({ status: false, msg });
+//   // /* Auth End */
 
-  if(!req.body.address || !req.body.walletId) {
-    return res.send({ status: false, msg: 'Parameters are missing!' });
-  }
+//   if(!req.body.address || !req.body.walletId) {
+//     return res.send({ status: false, msg: 'Parameters are missing!' });
+//   }
 
-  var walletId = req.body.walletId;
-  if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
-    return res.send({ status: false, msg: 'Invalid wallet ID!' });
-  }
+//   var walletId = req.body.walletId;
+//   if(!walletId.match(/^[0-9a-fA-F]{24}$/)) {
+//     return res.send({ status: false, msg: 'Invalid wallet ID!' });
+//   }
 
-  var wallet = await Wallet.findOne({ _id: walletId });
-  var address = req.body.address;
-  var amount = 0;
+//   var wallet = await Wallet.findOne({ _id: walletId });
+//   var address = req.body.address;
+//   var amount = 0;
 
-  if(!ethereumAddress.isAddress(address)) {
-    return res.send({ status: false, msg: 'Invalid address!' });
-  }
+//   if(!ethereumAddress.isAddress(address)) {
+//     return res.send({ status: false, msg: 'Invalid address!' });
+//   }
 
-  if(req.body.tokenAmount && !isNaN(req.body.tokenAmount)) {
-    amount = parseFloat(req.body.tokenAmount);
+//   if(req.body.tokenAmount && !isNaN(req.body.tokenAmount)) {
+//     amount = parseFloat(req.body.tokenAmount);
 
-    if(amount == 0) {
-      return res.send({ status: false, msg: 'Invalid amount value!' });
-    }
-  }
+//     if(amount == 0) {
+//       return res.send({ status: false, msg: 'Invalid amount value!' });
+//     }
+//   }
 
-  if(!wallet) {
-    return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
-  }
+//   if(!wallet) {
+//     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+//   }
 
-  contractObj.methods
-    .balanceOf(wallet.address)
-    .call({ from: config.contract.ownerAddress })
-    .then(async function(result) {
-      var balance = result / Math.pow(10, config.contract.decimals);
+//   contractObj.methods
+//     .balanceOf(wallet.address)
+//     .call({ from: config.contract.ownerAddress })
+//     .then(async function(result) {
+//       var balance = result / Math.pow(10, config.contract.decimals);
 
-      if(balance == 0) {
-        return res.send({ status: false, msg: 'Nothing to withdraw!' });
-      }
+//       if(balance == 0) {
+//         return res.send({ status: false, msg: 'Nothing to withdraw!' });
+//       }
 
-      if(amount != 0 && amount > balance) {
-        return res.send({
-          status: false,
-          msg: 'Check your balance and withdraw amount!'
-        });
-      }
+//       if(amount != 0 && amount > balance) {
+//         return res.send({
+//           status: false,
+//           msg: 'Check your balance and withdraw amount!'
+//         });
+//       }
 
-      if(amount == 0) amount = balance;
+//       if(amount == 0) amount = balance;
 
-      var tokenAmount = new BigNumber(
-        (amount * Math.pow(10, config.contract.decimals)).toString()
-      );
+//       var tokenAmount = new BigNumber(
+//         (amount * Math.pow(10, config.contract.decimals)).toString()
+//       );
 
-      var txData = contractObj.methods
-        .transfer(address, tokenAmount)
-        .encodeABI();
-      var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
-      var privateKey = new Buffer(privateKeyStr, 'hex');
+//       var txData = contractObj.methods
+//         .transfer(address, tokenAmount)
+//         .encodeABI();
+//       var privateKeyStr = stripHexPrefix(cryptr.decrypt(wallet.privateKey));
+//       var privateKey = new Buffer(privateKeyStr, 'hex');
 
-      /* Supply Gas */
-      var ethAmount = new BigNumber(await web3.eth.getBalance(wallet.address));
-      var gasPrice = await web3.eth.getGasPrice();
+//       /* Supply Gas */
+//       var ethAmount = new BigNumber(await web3.eth.getBalance(wallet.address));
+//       var gasPrice = await web3.eth.getGasPrice();
 
-      var remainingGas = new BigNumber(ethAmount / gasPrice);
+//       var remainingGas = new BigNumber(ethAmount / gasPrice);
 
-      /* Estimate gas by doubling. Because sometimes gas is estimated incorrectly and transaction fails. */
-      var totalGasT
-        = 2
-        * parseInt(
-          await contractObj.methods
-            .transfer(address, tokenAmount)
-            .estimateGas({ gas: 450000 })
-        );
-      var totalGas = new BigNumber(totalGasT);
+//       /* Estimate gas by doubling. Because sometimes gas is estimated incorrectly and transaction fails. */
+//       var totalGasT
+//         = 2
+//         * parseInt(
+//           await contractObj.methods
+//             .transfer(address, tokenAmount)
+//             .estimateGas({ gas: 450000 })
+//         );
+//       var totalGas = new BigNumber(totalGasT);
 
-      var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
-      var totalETH = parseFloat(totalGas / Math.pow(10, 9));
+//       var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
+//       var totalETH = parseFloat(totalGas / Math.pow(10, 9));
 
-      var giveETH = 0;
-      var flag = false;
+//       var giveETH = 0;
+//       var flag = false;
 
-      if(remainingETH < totalETH) {
-        giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
-        flag = true;
-      }
-      /* Supply Gas */
+//       if(remainingETH < totalETH) {
+//         giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
+//         flag = true;
+//       }
+//       /* Supply Gas */
 
-      console.log(`giveETH - ${giveETH}`);
+//       console.log(`giveETH - ${giveETH}`);
 
-      /* Promise Start */
-      payGasAsETH(wallet.address, giveETH, flag).then(
-        async function(result) {
-          /* Withdraw Tokens */
-          var nonce = await web3.eth
-            .getTransactionCount(wallet.address)
-            .catch(error =>
-              res.send({
-                status: false,
-                msg: 'Error occurred in getting transaction count!'
-              })
-            );
+//       /* Promise Start */
+//       payGasAsETH(wallet.address, giveETH, flag).then(
+//         async function(result) {
+//           /* Withdraw Tokens */
+//           var nonce = await web3.eth
+//             .getTransactionCount(wallet.address)
+//             .catch(error =>
+//               res.send({
+//                 status: false,
+//                 msg: 'Error occurred in getting transaction count!'
+//               })
+//             );
 
-          var txParams = {
-            nonce: web3.utils.toHex(nonce),
-            gasPrice: web3.utils.toHex(gasPrice),
-            gasLimit: totalGasT,
-            from: wallet.address,
-            to: contractObj._address,
-            value: '0x00',
-            chainId: config.chainId,
-            data: txData
-          };
+//           var txParams = {
+//             nonce: web3.utils.toHex(nonce),
+//             gasPrice: web3.utils.toHex(gasPrice),
+//             gasLimit: totalGasT,
+//             from: wallet.address,
+//             to: contractObj._address,
+//             value: '0x00',
+//             chainId: config.chainId,
+//             data: txData
+//           };
 
-          var tx = new Tx(txParams);
-          tx.sign(privateKey);
+//           var tx = new Tx(txParams);
+//           tx.sign(privateKey);
 
-          var serializedTx = tx.serialize();
+//           var serializedTx = tx.serialize();
 
-          var sent = false;
-          web3.eth
-            .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-            .on('transactionHash', hash => {
-              balance = parseFloat(balance) - parseFloat(amount);
-              History.create(
-                {
-                  from: wallet._id,
-                  to: address,
-                  amount: tokenAmount,
-                  hash,
-                  action: 'export'
-                },
-                async function(err, history) {
-                  sent = true;
+//           var sent = false;
+//           web3.eth
+//             .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
+//             .on('transactionHash', hash => {
+//               balance = parseFloat(balance) - parseFloat(amount);
+//               History.create(
+//                 {
+//                   from: wallet._id,
+//                   to: address,
+//                   amount: tokenAmount,
+//                   hash,
+//                   action: 'export'
+//                 },
+//                 async function(err, history) {
+//                   sent = true;
 
-                  if(err) {
-                    return res.send({
-                      status: false,
-                      msg: 'Error occurred in saving history!'
-                    });
-                  }
+//                   if(err) {
+//                     return res.send({
+//                       status: false,
+//                       msg: 'Error occurred in saving history!'
+//                     });
+//                   }
 
-                  return res.send({
-                    status: true,
-                    hash,
-                    balance
-                  });
-                }
-              );
-            })
-            .on('receipt', receipt => {
-              // we should persist these to keep a papertrail.
-              console.log('withdraw receipt', receipt);
-            })
-            .on('error', err => {
-              console.log('withdraw err', err);
-              if(!sent) return res.send({ status: false, msg: err.message });
-            });
-        },
-        err => res.send({ status: false, msg: err.message })
-      );
-      /* Promise End */
-    })
-    .catch(err => {
-      console.log('err', err);
-      return res.status(400).send({ status: false, msg: err });
-    });
-}
+//                   return res.send({
+//                     status: true,
+//                     hash,
+//                     balance
+//                   });
+//                 }
+//               );
+//             })
+//             .on('receipt', receipt => {
+//               // we should persist these to keep a papertrail.
+//               console.log('withdraw receipt', receipt);
+//             })
+//             .on('error', err => {
+//               console.log('withdraw err', err);
+//               if(!sent) return res.send({ status: false, msg: err.message });
+//             });
+//         },
+//         err => res.send({ status: false, msg: err.message })
+//       );
+//       /* Promise End */
+//     })
+//     .catch(err => {
+//       console.log('err', err);
+//       return res.status(400).send({ status: false, msg: err });
+//     });
+// }
 export async function batchWallet(req, res) {
   // /* Auth Begin */
   // var msg = checkAuth(req);
@@ -578,7 +530,7 @@ export async function batchWallet(req, res) {
 }
 
 export async function batchRequest(req, res) {
-  console.log('req.body', req.body);
+  // console.log('req.body', req.body);
 
   if(!req.body.fromWalletId) {
     return res
@@ -752,10 +704,10 @@ export async function batchRequest(req, res) {
       // console.log(`Current ETH - ${ethAmount}`);
 
       var giveETH = 0;
-      var flag = false;
+      // var flag = false;
 
       if(totalETH.isGreaterThan(ethAmount)) {
-        flag = true;
+        // flag = true;
         giveETH = new BigNumber(totalETH.minus(ethAmount));
       }
 
@@ -763,7 +715,8 @@ export async function batchRequest(req, res) {
       /* Supply Gas End */
 
       /* Promise Start */
-      payGasAsETH(fromWallet.address, giveETH, flag)
+      payGasAsETH(fromWallet.address, giveETH)
+        //payGasAsETH(fromWallet.address, giveETH, flag)
         .then(
           async function(result) {
             //  start accumulating txs here
@@ -1214,301 +1167,301 @@ export async function batchRequest(req, res) {
 //   /* Check Balance End */
 // }
 
-export async function transferTokensInternally(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
-  //console.log('req.body', req.body);
-  if(
-    !req.body.fromWalletId
-    || !req.body.toWalletId
-    || !req.body.tokenAmount
-    || isNaN(req.body.tokenAmount)
-  ) {
-    return res.send({ status: false, msg: 'Incorrect parameters!' });
-  }
+// export async function transferTokensInternally(req, res) {
+//   // /* Auth Begin */
+//   // var msg = checkAuth(req);
+//   // if(msg != '') return res.send({ status: false, msg });
+//   // /* Auth End */
+//   //console.log('req.body', req.body);
+//   if(
+//     !req.body.fromWalletId
+//     || !req.body.toWalletId
+//     || !req.body.tokenAmount
+//     || isNaN(req.body.tokenAmount)
+//   ) {
+//     return res.send({ status: false, msg: 'Incorrect parameters!' });
+//   }
 
-  /* ID Check */
-  var fromWalletId = req.body.fromWalletId;
-  // validate fromWalletId is 12-byte ObjectId value
-  if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
-    return res.send({ status: false, msg: 'Invalid wallet id!' });
-  }
-  /* ID Check End */
+//   /* ID Check */
+//   var fromWalletId = req.body.fromWalletId;
+//   // validate fromWalletId is 12-byte ObjectId value
+//   if(!fromWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+//     return res.send({ status: false, msg: 'Invalid wallet id!' });
+//   }
+//   /* ID Check End */
 
-  var fromWallet = await Wallet.findOne({ _id: fromWalletId });
-  if(!fromWallet) {
-    return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
-  }
+//   var fromWallet = await Wallet.findOne({ _id: fromWalletId });
+//   if(!fromWallet) {
+//     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+//   }
 
-  /* ID Check */
-  var toWalletId = req.body.toWalletId;
-  // validate toWalletId is 12-byte ObjectId value
-  if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
-    return res.send({ status: false, msg: 'Invalid wallet id!' });
-  }
-  /* ID Check End */
+//   /* ID Check */
+//   var toWalletId = req.body.toWalletId;
+//   // validate toWalletId is 12-byte ObjectId value
+//   if(!toWalletId.match(/^[0-9a-fA-F]{24}$/)) {
+//     return res.send({ status: false, msg: 'Invalid wallet id!' });
+//   }
+//   /* ID Check End */
 
-  // find toWalletId in tms db
-  var toWallet = await Wallet.findOne({ _id: toWalletId });
-  if(!toWallet) {
-    return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
-  }
-  // set the amount to be transfered as a floating point number
-  var amount = parseFloat(req.body.tokenAmount);
+//   // find toWalletId in tms db
+//   var toWallet = await Wallet.findOne({ _id: toWalletId });
+//   if(!toWallet) {
+//     return res.send({ status: false, msg: 'Wallet doesn\'t exist!' });
+//   }
+//   // set the amount to be transfered as a floating point number
+//   var amount = parseFloat(req.body.tokenAmount);
 
-  // verify the amount is greater that 0
-  if(amount == 0) {
-    return res.send({
-      status: false,
-      msg: 'Token amount shouldn\'t be equal to 0!'
-    });
-  }
+//   // verify the amount is greater that 0
+//   if(amount == 0) {
+//     return res.send({
+//       status: false,
+//       msg: 'Token amount shouldn\'t be equal to 0!'
+//     });
+//   }
 
-  // set floating point number to 2 decimal places
-  amount = parseFloat(amount.toFixed(2));
-  // calculate fee based
-  var fee = parseFloat(amount * config.percent / 100); // Fee to Revenue Wallet
-  // trim fee to two decimal places
-  fee = parseFloat(fee.toFixed(2));
-  //calculate total amount to be transfered
-  var totalAmount = parseFloat(amount) + parseFloat(fee);
+//   // set floating point number to 2 decimal places
+//   amount = parseFloat(amount.toFixed(2));
+//   // calculate fee based
+//   var fee = parseFloat(amount * config.percent / 100); // Fee to Revenue Wallet
+//   // trim fee to two decimal places
+//   fee = parseFloat(fee.toFixed(2));
+//   //calculate total amount to be transfered
+//   var totalAmount = parseFloat(amount) + parseFloat(fee);
 
-  // Check balance of fromWallet account
-  contractObj.methods
-    .balanceOf(fromWallet.address)
-    .call({ from: config.contract.ownerAddress })
-    .then(async result => {
-      // console.log('result', result);
-      var balance = result / Math.pow(10, config.contract.decimals);
-      // check if balance is 0
-      // console.log('balance', balance);
-      if(balance === 0) {
-        console.log('err', 'Nothing to transfer!');
-        return res
-          .status(400)
-          .send({ status: false, msg: 'Nothing to transfer!' });
-      }
-      // check if totalAmount is greater than balance and reject if true
-      if(totalAmount > balance) {
-        console.log('err', 'Insufficient balance!');
-        return res
-          .status(400)
-          .send({ status: false, msg: 'Insufficient balance!' });
-      }
+//   // Check balance of fromWallet account
+//   contractObj.methods
+//     .balanceOf(fromWallet.address)
+//     .call({ from: config.contract.ownerAddress })
+//     .then(async result => {
+//       // console.log('result', result);
+//       var balance = result / Math.pow(10, config.contract.decimals);
+//       // check if balance is 0
+//       // console.log('balance', balance);
+//       if(balance === 0) {
+//         console.log('err', 'Nothing to transfer!');
+//         return res
+//           .status(400)
+//           .send({ status: false, msg: 'Nothing to transfer!' });
+//       }
+//       // check if totalAmount is greater than balance and reject if true
+//       if(totalAmount > balance) {
+//         console.log('err', 'Insufficient balance!');
+//         return res
+//           .status(400)
+//           .send({ status: false, msg: 'Insufficient balance!' });
+//       }
 
-      contractObj.methods
-        .balanceOf(toWallet.address)
-        .call({ from: config.contract.ownerAddress })
-        .then(async function(result) {
-          var toBalance = result / Math.pow(10, config.contract.decimals);
+//       contractObj.methods
+//         .balanceOf(toWallet.address)
+//         .call({ from: config.contract.ownerAddress })
+//         .then(async function(result) {
+//           var toBalance = result / Math.pow(10, config.contract.decimals);
 
-          var tokenAmount = new BigNumber(
-            (amount * Math.pow(10, config.contract.decimals)).toString()
-          );
-          var feeAmount = new BigNumber(
-            (fee * Math.pow(10, config.contract.decimals)).toString()
-          );
+//           var tokenAmount = new BigNumber(
+//             (amount * Math.pow(10, config.contract.decimals)).toString()
+//           );
+//           var feeAmount = new BigNumber(
+//             (fee * Math.pow(10, config.contract.decimals)).toString()
+//           );
 
-          var privateKeyStr = stripHexPrefix(
-            cryptr.decrypt(fromWallet.privateKey)
-          );
-          var privateKey = new Buffer(privateKeyStr, 'hex');
+//           var privateKeyStr = stripHexPrefix(
+//             cryptr.decrypt(fromWallet.privateKey)
+//           );
+//           var privateKey = new Buffer(privateKeyStr, 'hex');
 
-          /* Supply Gas */
-          var txDataFee = contractObj.methods
-            .transfer(config.revenueWallet.address, feeAmount)
-            .encodeABI();
-          var txData = contractObj.methods
-            .transfer(toWallet.address, tokenAmount)
-            .encodeABI();
-          console.log(
-            'toWallet.address, tokenAmount',
-            toWallet.address,
-            tokenAmount
-          );
-          /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
-          var gasESTFee
-            = 2
-            * parseInt(
-              await contractObj.methods
-                .transfer(config.revenueWallet.address, feeAmount)
-                .estimateGas({ gas: 450000 })
-            );
-          console.log(
-            'toWallet.address, tokenAmount',
-            toWallet.address,
-            tokenAmount
-          );
-          var gasEST
-            = 2
-            * parseInt(
-              await contractObj.methods
-                .transfer(toWallet.address, tokenAmount)
-                .estimateGas({ gas: 450000 })
-            );
-          console.log('gasESTFee', gasESTFee);
-          var totalGas = new BigNumber(gasEST + gasESTFee);
+//           /* Supply Gas */
+//           var txDataFee = contractObj.methods
+//             .transfer(config.revenueWallet.address, feeAmount)
+//             .encodeABI();
+//           var txData = contractObj.methods
+//             .transfer(toWallet.address, tokenAmount)
+//             .encodeABI();
+//           console.log(
+//             'toWallet.address, tokenAmount',
+//             toWallet.address,
+//             tokenAmount
+//           );
+//           /* Estimate gas by doubling. Because sometimes, gas is not estimated correctly and transaction fails! */
+//           var gasESTFee
+//             = 2
+//             * parseInt(
+//               await contractObj.methods
+//                 .transfer(config.revenueWallet.address, feeAmount)
+//                 .estimateGas({ gas: 450000 })
+//             );
+//           console.log(
+//             'toWallet.address, tokenAmount',
+//             toWallet.address,
+//             tokenAmount
+//           );
+//           var gasEST
+//             = 2
+//             * parseInt(
+//               await contractObj.methods
+//                 .transfer(toWallet.address, tokenAmount)
+//                 .estimateGas({ gas: 450000 })
+//             );
+//           console.log('gasESTFee', gasESTFee);
+//           var totalGas = new BigNumber(gasEST + gasESTFee);
 
-          var ethAmount = new BigNumber(
-            await web3.eth.getBalance(fromWallet.address)
-          );
-          var gasPrice = await web3.eth.getGasPrice();
+//           var ethAmount = new BigNumber(
+//             await web3.eth.getBalance(fromWallet.address)
+//           );
+//           var gasPrice = await web3.eth.getGasPrice();
 
-          console.log(`gasPrice - ${gasPrice}`);
+//           console.log(`gasPrice - ${gasPrice}`);
 
-          var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
-          // console.log('remainingGas - ' + remainingGas);
-          var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
-          var totalETH = parseFloat(totalGas / Math.pow(10, 9));
+//           var remainingGas = new BigNumber((ethAmount / gasPrice).toString());
+//           // console.log('remainingGas - ' + remainingGas);
+//           var remainingETH = parseFloat(remainingGas / Math.pow(10, 9));
+//           var totalETH = parseFloat(totalGas / Math.pow(10, 9));
 
-          var giveETH = 0;
-          var flag = false;
+//           var giveETH = 0;
+//           var flag = false;
 
-          if(remainingETH < totalETH) {
-            // need to supply gas
-            giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
+//           if(remainingETH < totalETH) {
+//             // need to supply gas
+//             giveETH = new BigNumber(totalGas.minus(remainingGas) * gasPrice);
 
-            flag = true;
-          }
+//             flag = true;
+//           }
 
-          console.log(`giveETH - ${giveETH}`);
-          /* Supply Gas End */
+//           console.log(`giveETH - ${giveETH}`);
+//           /* Supply Gas End */
 
-          /* Promise Start */
-          payGasAsETH(fromWallet.address, giveETH, flag).then(
-            async function(result) {
-              var nonce = await web3.eth
-                .getTransactionCount(fromWallet.address)
-                .catch(error =>
-                  res.send({
-                    status: false,
-                    msg: 'Error occurred in getting transaction count!'
-                  })
-                );
+//           /* Promise Start */
+//           payGasAsETH(fromWallet.address, giveETH, flag).then(
+//             async function(result) {
+//               var nonce = await web3.eth
+//                 .getTransactionCount(fromWallet.address)
+//                 .catch(error =>
+//                   res.send({
+//                     status: false,
+//                     msg: 'Error occurred in getting transaction count!'
+//                   })
+//                 );
 
-              /* Send Fee */
-              var txParamsFee = {
-                nonce: web3.utils.toHex(nonce),
-                gasPrice: web3.utils.toHex(gasPrice),
-                gasLimit: gasESTFee,
-                from: fromWallet.address,
-                to: contractObj._address,
-                value: '0x00',
-                chainId: config.chainId,
-                data: txDataFee
-              };
+//               /* Send Fee */
+//               var txParamsFee = {
+//                 nonce: web3.utils.toHex(nonce),
+//                 gasPrice: web3.utils.toHex(gasPrice),
+//                 gasLimit: gasESTFee,
+//                 from: fromWallet.address,
+//                 to: contractObj._address,
+//                 value: '0x00',
+//                 chainId: config.chainId,
+//                 data: txDataFee
+//               };
 
-              var txFee = new Tx(txParamsFee);
-              txFee.sign(privateKey);
+//               var txFee = new Tx(txParamsFee);
+//               txFee.sign(privateKey);
 
-              var serializedTxFee = txFee.serialize();
+//               var serializedTxFee = txFee.serialize();
 
-              web3.eth
-                .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
-                .on('transactionHash', hash => {
-                  console.log('transactionHash', hash);
-                })
-                .on('recipet', recipet => {
-                  console.log('recipet', recipet);
-                })
-                .on('error', err => {
-                  console.log('sendSignedTransaction err', err);
-                });
-              /* Send Fee End */
+//               web3.eth
+//                 .sendSignedTransaction(`0x${serializedTxFee.toString('hex')}`)
+//                 .on('transactionHash', hash => {
+//                   console.log('transactionHash', hash);
+//                 })
+//                 .on('recipet', recipet => {
+//                   console.log('recipet', recipet);
+//                 })
+//                 .on('error', err => {
+//                   console.log('sendSignedTransaction err', err);
+//                 });
+//               /* Send Fee End */
 
-              var txParams = {
-                nonce: web3.utils.toHex(nonce + 1),
-                gasPrice: web3.utils.toHex(gasPrice),
-                gasLimit: gasEST,
-                from: fromWallet.address,
-                to: contractObj._address,
-                value: '0x00',
-                chainId: config.chainId,
-                data: txData
-              };
+//               var txParams = {
+//                 nonce: web3.utils.toHex(nonce + 1),
+//                 gasPrice: web3.utils.toHex(gasPrice),
+//                 gasLimit: gasEST,
+//                 from: fromWallet.address,
+//                 to: contractObj._address,
+//                 value: '0x00',
+//                 chainId: config.chainId,
+//                 data: txData
+//               };
 
-              var tx = new Tx(txParams);
-              tx.sign(privateKey);
+//               var tx = new Tx(txParams);
+//               tx.sign(privateKey);
 
-              var serializedTx = tx.serialize();
+//               var serializedTx = tx.serialize();
 
-              var sent = false;
-              web3.eth
-                .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
-                .on('transactionHash', function(hash) {
-                  var fromBalance
-                    = parseFloat(balance) - parseFloat(totalAmount);
-                  toBalance = parseFloat(toBalance) + parseFloat(amount);
+//               var sent = false;
+//               web3.eth
+//                 .sendSignedTransaction(`0x${serializedTx.toString('hex')}`)
+//                 .on('transactionHash', function(hash) {
+//                   var fromBalance
+//                     = parseFloat(balance) - parseFloat(totalAmount);
+//                   toBalance = parseFloat(toBalance) + parseFloat(amount);
 
-                  History.create({
-                    from: fromWallet._id,
-                    to: toWallet._id,
-                    amount: tokenAmount,
-                    hash,
-                    action: 'spent'
-                  })
-                    .then(result =>
-                      res.status(201).send({
-                        status: true,
-                        hash,
-                        fromBalance,
-                        toBalance
-                      })
-                    )
-                    .catch(err => {
-                      console.log('err', err);
-                      return res.status(400).send({
-                        status: false,
-                        msg: 'Error occurred in saving history!'
-                      });
-                    });
-                })
-                .on('receipt', receipt => {
-                  // we should persist these to keep a papertrail.
-                  console.log('receipt', receipt);
-                })
-                .on('error', err => {
-                  if(!sent) console.log('err', err);
-                  console.log('err', err);
-                  return res
-                    .status(400)
-                    .send({ status: false, msg: err.message });
-                });
-            },
-            function(err) {
-              console.log('err', err);
-              return res.status(400).send({ status: false, msg: err.message });
-            }
-          );
-          /* Promise End */
-        })
-        .catch(err => {
-          console.log('err', err);
-          res.status(400).send({ status: false, msg: err });
-        });
-    })
-    .catch(err => {
-      console.log('err', err);
-      res.status(400).send({ status: false, msg: err });
-    });
-  /* Check Balance End */
-}
-export async function history(req, res) {
-  // /* Auth Begin */
-  // var msg = checkAuth(req);
-  // if(msg != '') return res.send({ status: false, msg });
-  // /* Auth End */
+//                   History.create({
+//                     from: fromWallet._id,
+//                     to: toWallet._id,
+//                     amount: tokenAmount,
+//                     hash,
+//                     action: 'spent'
+//                   })
+//                     .then(result =>
+//                       res.status(201).send({
+//                         status: true,
+//                         hash,
+//                         fromBalance,
+//                         toBalance
+//                       })
+//                     )
+//                     .catch(err => {
+//                       console.log('err', err);
+//                       return res.status(400).send({
+//                         status: false,
+//                         msg: 'Error occurred in saving history!'
+//                       });
+//                     });
+//                 })
+//                 .on('receipt', receipt => {
+//                   // we should persist these to keep a papertrail.
+//                   console.log('receipt', receipt);
+//                 })
+//                 .on('error', err => {
+//                   if(!sent) console.log('err', err);
+//                   console.log('err', err);
+//                   return res
+//                     .status(400)
+//                     .send({ status: false, msg: err.message });
+//                 });
+//             },
+//             function(err) {
+//               console.log('err', err);
+//               return res.status(400).send({ status: false, msg: err.message });
+//             }
+//           );
+//           /* Promise End */
+//         })
+//         .catch(err => {
+//           console.log('err', err);
+//           res.status(400).send({ status: false, msg: err });
+//         });
+//     })
+//     .catch(err => {
+//       console.log('err', err);
+//       res.status(400).send({ status: false, msg: err });
+//     });
+//   /* Check Balance End */
+// }
+// export async function history(req, res) {
+//   // /* Auth Begin */
+//   // var msg = checkAuth(req);
+//   // if(msg != '') return res.send({ status: false, msg });
+//   // /* Auth End */
 
-  if(!req.body.walletId) {
-    return res.send({ status: false, msg: 'Wallet is missing!' });
-  }
+//   if(!req.body.walletId) {
+//     return res.send({ status: false, msg: 'Wallet is missing!' });
+//   }
 
-  var walletId = req.body.walletId;
-  var history = await History.find({
-    $or: [{ from: walletId }, { to: walletId }]
-  });
+//   var walletId = req.body.walletId;
+//   var history = await History.find({
+//     $or: [{ from: walletId }, { to: walletId }]
+//   });
 
-  return res.send({ status: true, history });
-}
+//   return res.send({ status: true, history });
+// }

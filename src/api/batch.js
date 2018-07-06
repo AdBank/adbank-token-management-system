@@ -3,7 +3,7 @@
 const Web3 = require('web3');
 const Cryptr = require('cryptr');
 const Wallet = require('./wallet/wallet.model');
-const History = require('./history/history.model');
+// const History = require('./history/history.model');
 
 const BigNumber = require('bignumber.js');
 const net = require('net');

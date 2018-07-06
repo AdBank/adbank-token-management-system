@@ -7,7 +7,7 @@
 
 import Wallet from '../api/wallet/wallet.model';
 import Receipt from '../api/receipt/receipt.model';
-import History from '../api/history/history.model';
+// import History from '../api/history/history.model';
 import Transaction from '../api/transaction/transaction.model';
 import config from './environment/';
 

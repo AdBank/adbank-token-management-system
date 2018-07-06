@@ -12,6 +12,8 @@ module.exports = {
   ip: process.env.IP || '0.0.0.0',
 
   name: 'token-management-server',
+  // dummy account to simulate
+  account: 1,
   port: process.env.PORT || 8080,
   mongo: {
     username: process.env.MONGODB_USER || '',
