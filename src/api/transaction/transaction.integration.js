@@ -25,10 +25,7 @@ describe('Transaction API:', () => {
       nats.subscribe(`transaction.save.${config.account}`, msg => {
         console.log('[test] transaction.save', msg._id, msg.status);
         if(msg.status === 'Pending') {
-          console.info(
-            'transactionHash',
-            `https://ropsten.etherscan.io/tx/${msg.hash}`
-          );
+          console.info('transactionHash', `https://ropsten.etherscan.io/tx/${msg.hash}`);
         }
         if(msg.status === 'Complete') {
           completeCount++;
@@ -39,16 +36,18 @@ describe('Transaction API:', () => {
       });
 
       request(app)
-        .post('/api/v1/transactions')
+        .post('/api/v1/transactions/withdraw')
         .set('x-api-key', `${config.key}`)
         .send({
-          sender: 'advertiser test advertiser',
-          receiver: 'publisher test publisher',
-          account: 1,
-          txId: '5b3f75936012a42a994a6cbb',
-          from: '5b17f7a059ca190014773f8c',
+          txId: '5b42b94ffa6b8451353726c5',
+          from: '5b17f7b559ca19001477408e',
           to: '5b17f7b559ca19001477408e',
-          amount: 1
+          sender: 'publisher test publisher',
+          receiver: '0x1a3a5861beF7137111F34528e0581083CffFad8f',
+          account: 1,
+          address: '0x1a3a5861beF7137111F34528e0581083CffFad8f',
+          walletId: '5b17f7b559ca19001477408e',
+          amount: 1,
         })
         .expect(201)
         .expect('Content-Type', /json/)
@@ -60,7 +59,6 @@ describe('Transaction API:', () => {
         });
     }).timeout(200000);
 
-
     describe('POST /api/v1/transactions', () => {
       it('should respond with a transaction when authenticated', done => {
         let completeCount = 0;
@@ -68,10 +66,7 @@ describe('Transaction API:', () => {
         nats.subscribe(`transaction.save.${config.account}`, msg => {
           console.log('[test] transaction.save', msg._id, msg.status);
           if(msg.status === 'Pending') {
-            console.info(
-              'transactionHash',
-              `https://ropsten.etherscan.io/tx/${msg.hash}`
-            );
+            console.info('transactionHash', `https://ropsten.etherscan.io/tx/${msg.hash}`);
           }
           if(msg.status === 'Complete') {
             completeCount++;
@@ -91,7 +86,7 @@ describe('Transaction API:', () => {
             txId: '5b3f75936012a42a994a6cbb',
             from: '5b17f7a059ca190014773f8c',
             to: '5b17f7b559ca19001477408e',
-            amount: 1
+            amount: 1,
           })
           .expect(201)
           .expect('Content-Type', /json/)
@@ -102,7 +97,6 @@ describe('Transaction API:', () => {
             console.log('res', res.body._id);
           });
       }).timeout(200000);
-
-
+    });
   });
 });
